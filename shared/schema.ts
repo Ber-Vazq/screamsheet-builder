@@ -14,6 +14,9 @@ export const screamsheets = sqliteTable("screamsheets", {
   settings: text("settings", { mode: "json" }).$type<SheetSettings>().notNull(),
   // Ordered list of content blocks
   blocks: text("blocks", { mode: "json" }).$type<Block[]>().notNull(),
+  // Secret GM key that owns this sheet. The library only lists sheets matching
+  // the GM's key; players opening a share link never receive this value.
+  ownerKey: text("owner_key"),
   createdAt: integer("created_at").notNull(),
 });
 
@@ -55,6 +58,7 @@ export const insertScreamsheetSchema = z.object({
   branding: brandingSchema,
   settings: settingsSchema,
   blocks: z.array(blockSchema),
+  ownerKey: z.string().trim().optional(),
 });
 
 export type InsertScreamsheet = z.infer<typeof insertScreamsheetSchema>;

@@ -13,7 +13,7 @@ export function BrandMark() {
           <path d="M11 19 L11 12 L16 17 L16 12" fill="none" stroke="hsl(210 30% 92%)" strokeWidth="2" strokeLinecap="square" />
           <path d="M18.5 12 h3.5 M20.25 12 v7" stroke="hsl(210 30% 92%)" strokeWidth="2" strokeLinecap="square" />
         </svg>
-        <span className="font-bold tracking-[0.2em] text-sm uppercase text-foreground" style={{ fontFamily: "'Orbitron',sans-serif" }}>
+        <span className="font-bold tracking-[0.15em] sm:tracking-[0.2em] text-xs sm:text-sm uppercase text-foreground whitespace-nowrap" style={{ fontFamily: "'Orbitron',sans-serif" }}>
           Scream<span className="text-primary">sheet</span>
         </span>
       </a>
@@ -44,12 +44,12 @@ export default function AppShell({ children, actions }: { children: ReactNode; a
         </g>
       </svg>
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto max-w-7xl px-4 h-14 flex items-center justify-between gap-4">
-          <BrandMark />
-          <div className="flex items-center gap-2">{actions}</div>
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 h-14 flex items-center justify-between gap-2 sm:gap-4 min-w-0">
+          <div className="min-w-0 shrink overflow-hidden"><BrandMark /></div>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">{actions}</div>
         </div>
       </header>
-      <main className="relative z-10 mx-auto max-w-7xl px-4 py-8">{children}</main>
+      <main className="relative z-10 mx-auto max-w-7xl px-3 sm:px-4 py-8">{children}</main>
     </div>
   );
 }

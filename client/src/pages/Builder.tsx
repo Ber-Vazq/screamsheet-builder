@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearch, useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import type { Branding, SheetSettings, Block, Screamsheet } from "@shared/schema";
 import { getTemplate, starterBlocks, newBlock } from "@/lib/templates";
+import { getGmKey } from "@/lib/gmKey";
 import SheetRenderer from "@/components/SheetRenderer";
 import AppShell from "@/components/AppShell";
 import { exportPng, exportPdf } from "@/lib/exportSheet";
@@ -100,6 +101,7 @@ export default function Builder() {
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/screamsheets", {
         title, template: tpl.id, branding, settings, blocks,
+        ownerKey: getGmKey(),
       });
       return (await res.json()) as Screamsheet;
     },
@@ -107,7 +109,10 @@ export default function Builder() {
       queryClient.invalidateQueries({ queryKey: ["/api/screamsheets"] });
       const url = `${window.location.origin}${window.location.pathname}#/s/${s.id}`;
       setShareUrl(url);
-      toast({ title: "Saved", description: "Shareable link is ready below." });
+      const filed = getGmKey()
+        ? "Saved under your GM key. Shareable link is ready below."
+        : "Saved. Tip: set a GM key on the home page first so this shows up in your private library. Shareable link is ready below.";
+      toast({ title: "Saved", description: filed });
     },
     onError: () => toast({ title: "Save failed", description: "Could not save the screamsheet.", variant: "destructive" }),
   });
@@ -132,25 +137,54 @@ export default function Builder() {
     }
   };
 
-  const previewScale = 0.66;
+  // Responsive preview scale: fit the 816px sheet to the preview pane width,
+  // capped at 0.66 on wide screens so it never balloons.
+  const previewBoxRef = useRef<HTMLDivElement>(null);
+  const previewInnerRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState(0.66);
+  const [previewHeight, setPreviewHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const box = previewBoxRef.current;
+    if (!box) return;
+    const compute = () => {
+      // account for the pane's padding (p-4 = 16px each side)
+      const avail = Math.max(box.clientWidth - 32, 80);
+      const next = Math.min(avail / 816, 0.66);
+      setPreviewScale(next);
+      const inner = previewInnerRef.current;
+      if (inner) setPreviewHeight(inner.offsetHeight * next);
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(box);
+    if (previewInnerRef.current) ro.observe(previewInnerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  // keep height accurate as block content changes
+  useEffect(() => {
+    const inner = previewInnerRef.current;
+    if (inner) setPreviewHeight(inner.offsetHeight * previewScale);
+  }, [blocks, branding, settings, previewScale]);
 
   return (
     <AppShell
       actions={
         <>
           <Button size="sm" variant="outline" disabled={exporting} onClick={() => doExport("png")} data-testid="button-export-png">
-            <Download className="w-4 h-4 mr-1" /> PNG
+            <Download className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">PNG</span>
           </Button>
           <Button size="sm" variant="outline" disabled={exporting} onClick={() => doExport("pdf")} data-testid="button-export-pdf">
-            <FileText className="w-4 h-4 mr-1" /> PDF
+            <FileText className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">PDF</span>
           </Button>
           <Button size="sm" disabled={save.isPending} onClick={() => save.mutate()} data-testid="button-save">
-            <Save className="w-4 h-4 mr-1" /> {save.isPending ? "Saving..." : "Save & share"}
+            <Save className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">{save.isPending ? "Saving..." : "Save & share"}</span><span className="sm:hidden">{save.isPending ? "..." : "Save"}</span>
           </Button>
         </>
       }
     >
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] gap-6">
         {/* ---------------- FORM PANE ---------------- */}
         <div className="space-y-5">
           <div>
@@ -275,9 +309,9 @@ export default function Builder() {
         <div className="relative">
           <div className="lg:sticky lg:top-20">
             <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Live preview</div>
-            <div className="border border-card-border bg-background hud-grid-field hud-panel overflow-auto p-4 max-h-[78vh] flex justify-center">
-              <div style={{ width: 816 * previewScale, flexShrink: 0 }}>
-                <div style={{ transform: `scale(${previewScale})`, transformOrigin: "top left", width: 816 }}>
+            <div ref={previewBoxRef} className="border border-card-border bg-background hud-grid-field hud-panel overflow-auto p-4 max-h-[78vh] flex justify-center">
+              <div style={{ width: 816 * previewScale, height: previewHeight ?? undefined, flexShrink: 0 }}>
+                <div ref={previewInnerRef} style={{ transform: `scale(${previewScale})`, transformOrigin: "top left", width: 816 }}>
                   <SheetRenderer ref={sheetRef} branding={branding} settings={settings} blocks={blocks} />
                 </div>
               </div>

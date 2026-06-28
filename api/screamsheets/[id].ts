@@ -1,10 +1,16 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { supabase, TABLE } from "../_supabase.js";
 
+// Strips owner_key so the GM's secret key never leaks to players viewing a share link.
 function toApi(row: any) {
   if (!row) return row;
-  const { created_at, ...rest } = row;
+  const { created_at, owner_key, ...rest } = row;
   return { ...rest, createdAt: created_at };
+}
+
+function getOwner(req: VercelRequest): string {
+  const raw = Array.isArray(req.query.owner) ? req.query.owner[0] : req.query.owner;
+  return (raw ?? "").trim();
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -23,16 +29,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(toApi(data));
   }
 
-  // DELETE /api/screamsheets/:id -> remove from the library
+  // DELETE /api/screamsheets/:id?owner=KEY -> remove, but only if the GM key matches.
   if (req.method === "DELETE") {
-    const { data, error } = await supabase
+    const owner = getOwner(req);
+    if (!owner) return res.status(403).json({ error: "A GM key is required to delete." });
+
+    // Look up the sheet first so we can distinguish "not found" from "not yours".
+    const { data: existing, error: lookupErr } = await supabase
+      .from(TABLE)
+      .select("id, owner_key")
+      .eq("id", id)
+      .maybeSingle();
+    if (lookupErr) return res.status(500).json({ error: lookupErr.message });
+    if (!existing) return res.status(404).json({ error: "Not found" });
+    if (existing.owner_key !== owner)
+      return res.status(403).json({ error: "This screamsheet belongs to a different GM key." });
+
+    const { error } = await supabase
       .from(TABLE)
       .delete()
       .eq("id", id)
-      .select();
+      .eq("owner_key", owner);
     if (error) return res.status(500).json({ error: error.message });
-    if (!data || data.length === 0)
-      return res.status(404).json({ error: "Not found" });
     return res.status(200).json({ ok: true });
   }
 

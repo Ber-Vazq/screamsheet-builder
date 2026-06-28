@@ -18,23 +18,31 @@ export async function registerRoutes(
     res.json(sheet);
   });
 
-  // Read a shared screamsheet by id
+  // Read a shared screamsheet by id (public; owner key is stripped from response)
   app.get("/api/screamsheets/:id", async (req, res) => {
     const sheet = await storage.getScreamsheet(req.params.id);
     if (!sheet) return res.status(404).json({ error: "Not found" });
-    res.json(sheet);
+    const { ownerKey, ...safe } = sheet as any;
+    res.json(safe);
   });
 
-  // List saved screamsheets (the GM's library)
-  app.get("/api/screamsheets", async (_req, res) => {
-    const sheets = await storage.listScreamsheets();
-    res.json(sheets.sort((a, b) => b.createdAt - a.createdAt));
+  // List ONLY the sheets owned by the GM key in ?owner=. No key -> empty list.
+  app.get("/api/screamsheets", async (req, res) => {
+    const owner = String(req.query.owner ?? "").trim();
+    const sheets = await storage.listScreamsheets(owner);
+    const safe = sheets
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map(({ ownerKey, ...rest }: any) => rest);
+    res.json(safe);
   });
 
-  // Delete a screamsheet
+  // Delete a screamsheet, only if the GM key matches
   app.delete("/api/screamsheets/:id", async (req, res) => {
-    const ok = await storage.deleteScreamsheet(req.params.id);
-    if (!ok) return res.status(404).json({ error: "Not found" });
+    const owner = String(req.query.owner ?? "").trim();
+    const result = await storage.deleteScreamsheet(req.params.id, owner);
+    if (result === "notfound") return res.status(404).json({ error: "Not found" });
+    if (result === "forbidden")
+      return res.status(403).json({ error: "This screamsheet belongs to a different GM key." });
     res.json({ ok: true });
   });
 
