@@ -40,5 +40,3 @@ See [`SUPABASE_VERCEL_GUIDE.md`](./SUPABASE_VERCEL_GUIDE.md) for full setup step
 ## Security notes
 
 - The Supabase **anon key** is public-by-design (it ships in the client bundle); data access is governed by Row Level Security policies plus an application-layer GM-key check.
-- The **`service_role` key is never used** in this project and must never be committed.
-- Secrets live only in `.env` (gitignored) / Vercel environment variables. Use `.env.example` as a template.
