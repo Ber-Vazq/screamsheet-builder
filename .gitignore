@@ -3,3 +3,5 @@ dist
 data.db
 data.db-*
 *.log
+.env
+.vercel
