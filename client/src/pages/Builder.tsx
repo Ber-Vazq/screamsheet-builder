@@ -45,21 +45,35 @@ export default function Builder() {
   const [blocks, setBlocks] = useState<Block[]>(starterBlocks());
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  // When set, we're editing an existing sheet in place (Save overwrites it).
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  // Reset to template defaults when template changes (and load a copy if requested).
-  const loadId = new URLSearchParams(search).get("load");
+  // Two ways to open an existing sheet:
+  //   ?edit=ID -> edit in place (Save overwrites the same record)
+  //   ?load=ID -> start from a copy (Save creates a brand-new record)
+  // We read the query from BOTH the real search string and any query embedded
+  // in the hash (e.g. #/build/nct-tech?edit=ID), since this app uses hash routing
+  // and links may carry the param in either spot.
+  const hashQuery = typeof window !== "undefined" ? window.location.hash.split("?")[1] ?? "" : "";
+  const sp = new URLSearchParams(search || hashQuery);
+  const editId = sp.get("edit");
+  const loadId = sp.get("load");
+  const sourceId = editId ?? loadId;
   useEffect(() => {
     let cancelled = false;
-    if (loadId) {
-      getQueryFn<Screamsheet>({ on401: "throw" })({ queryKey: ["/api/screamsheets", loadId] } as any)
+    if (sourceId) {
+      Promise.resolve(
+        getQueryFn<Screamsheet>({ on401: "throw" })({ queryKey: ["/api/screamsheets", sourceId] } as any),
+      )
         .then((s) => {
           if (cancelled || !s) return;
-          setTitle(s.title + " (copy)");
+          setTitle(editId ? s.title : s.title + " (copy)");
           setBranding(s.branding);
           setSettings(s.settings);
           setBlocks(s.blocks);
+          setEditingId(editId ? sourceId : null);
         })
         .catch(() => {});
     } else {
@@ -67,11 +81,12 @@ export default function Builder() {
       setSettings(tpl.settings);
       setBlocks(starterBlocks());
       setTitle(tpl.name === "Custom Outlet" ? "Untitled Screamsheet" : tpl.name);
+      setEditingId(null);
     }
     setShareUrl(null);
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.template, loadId]);
+  }, [params.template, editId, loadId]);
 
   const isCustom = tpl.id === "custom";
 
@@ -97,22 +112,37 @@ export default function Builder() {
   };
 
   // --- save ---
+  // mode "update": PUT over the existing record (same share link stays valid).
+  // mode "create": POST a new record (fresh sheets and "Save as copy").
   const save = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/screamsheets", {
-        title, template: tpl.id, branding, settings, blocks,
-        ownerKey: getGmKey(),
-      });
-      return (await res.json()) as Screamsheet;
+    mutationFn: async (mode: "update" | "create") => {
+      const ownerKey = getGmKey();
+      const payload = { title, template: tpl.id, branding, settings, blocks, ownerKey };
+      if (mode === "update" && editingId) {
+        const res = await apiRequest(
+          "PUT",
+          `/api/screamsheets/${editingId}?owner=${encodeURIComponent(ownerKey)}`,
+          payload,
+        );
+        return { sheet: (await res.json()) as Screamsheet, mode };
+      }
+      const res = await apiRequest("POST", "/api/screamsheets", payload);
+      return { sheet: (await res.json()) as Screamsheet, mode };
     },
-    onSuccess: (s) => {
+    onSuccess: ({ sheet: s, mode }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/screamsheets"] });
       const url = `${window.location.origin}${window.location.pathname}#/s/${s.id}`;
       setShareUrl(url);
+      // After a create, switch into edit mode on the new record so further
+      // saves overwrite it instead of spawning more copies.
+      if (mode === "create") setEditingId(s.id);
+      const updated = mode === "update";
       const filed = getGmKey()
-        ? "Saved under your GM key. Shareable link is ready below."
+        ? updated
+          ? "Changes saved. The same shareable link now shows your updates."
+          : "Saved under your GM key. Shareable link is ready below."
         : "Saved. Tip: set a GM key on the home page first so this shows up in your private library. Shareable link is ready below.";
-      toast({ title: "Saved", description: filed });
+      toast({ title: updated ? "Updated" : "Saved", description: filed });
     },
     onError: () => toast({ title: "Save failed", description: "Could not save the screamsheet.", variant: "destructive" }),
   });
@@ -178,8 +208,15 @@ export default function Builder() {
           <Button size="sm" variant="outline" disabled={exporting} onClick={() => doExport("pdf")} data-testid="button-export-pdf">
             <FileText className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">PDF</span>
           </Button>
-          <Button size="sm" disabled={save.isPending} onClick={() => save.mutate()} data-testid="button-save">
-            <Save className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">{save.isPending ? "Saving..." : "Save & share"}</span><span className="sm:hidden">{save.isPending ? "..." : "Save"}</span>
+          {editingId && (
+            <Button size="sm" variant="outline" disabled={save.isPending} onClick={() => save.mutate("create")} data-testid="button-save-copy">
+              <Copy className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Save as copy</span>
+            </Button>
+          )}
+          <Button size="sm" disabled={save.isPending} onClick={() => save.mutate(editingId ? "update" : "create")} data-testid="button-save">
+            <Save className="w-4 h-4 sm:mr-1" />{" "}
+            <span className="hidden sm:inline">{save.isPending ? "Saving..." : editingId ? "Save changes" : "Save & share"}</span>
+            <span className="sm:hidden">{save.isPending ? "..." : "Save"}</span>
           </Button>
         </>
       }
@@ -187,6 +224,11 @@ export default function Builder() {
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] gap-6">
         {/* ---------------- FORM PANE ---------------- */}
         <div className="space-y-5">
+          {editingId && (
+            <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-primary border border-primary/40 bg-primary/5 px-3 py-2 hud-panel" data-testid="banner-editing">
+              <Save className="w-3.5 h-3.5" /> Editing saved sheet — Save changes overwrites it
+            </div>
+          )}
           <div>
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">Sheet title (private)</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" data-testid="input-title" />

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, ExternalLink, Plus, Newspaper, KeyRound, LogOut, ShieldCheck } from "lucide-react";
+import { Trash2, ExternalLink, Plus, Newspaper, KeyRound, LogOut, ShieldCheck, Pencil, CopyPlus } from "lucide-react";
 
 const NCT_NAV = ["GOSSIP", "OPINION", "WEATHER", "TECH", "LIFESTYLE", "LOCAL", "BIZ", "WORLD"];
 
@@ -249,11 +249,14 @@ export default function Home() {
                   </Button>
                 </div>
                 <div className="flex gap-2 mt-3">
+                  <Link href={`/build/${s.template}?edit=${s.id}`}>
+                    <a className="flex-1"><Button size="sm" className="w-full" data-testid={`button-edit-${s.id}`}><Pencil className="w-3.5 h-3.5 mr-1" /> Edit</Button></a>
+                  </Link>
                   <Link href={`/s/${s.id}`}>
                     <a className="flex-1"><Button size="sm" variant="outline" className="w-full" data-testid={`button-view-${s.id}`}><ExternalLink className="w-3.5 h-3.5 mr-1" /> Open</Button></a>
                   </Link>
                   <Link href={`/build/${s.template}?load=${s.id}`}>
-                    <a className="flex-1"><Button size="sm" variant="secondary" className="w-full" data-testid={`button-edit-${s.id}`}>Edit copy</Button></a>
+                    <a><Button size="sm" variant="secondary" data-testid={`button-duplicate-${s.id}`} aria-label="Duplicate" title="Duplicate as a new sheet"><CopyPlus className="w-3.5 h-3.5" /></Button></a>
                   </Link>
                 </div>
               </div>

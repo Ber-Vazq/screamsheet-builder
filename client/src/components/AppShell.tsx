@@ -1,5 +1,7 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Home as HomeIcon, FilePlus2 } from "lucide-react";
 
 export function BrandMark() {
   return (
@@ -18,6 +20,36 @@ export function BrandMark() {
         </span>
       </a>
     </Link>
+  );
+}
+
+// Persistent navigation so the generator is always one tap away — no relying on
+// the logo or the browser back button. Hidden on its own page to avoid redundancy.
+function NavActions() {
+  const [location] = useLocation();
+  const onHome = location === "/";
+  const onBuilder = location.startsWith("/build");
+  return (
+    <>
+      {!onHome && (
+        <Link href="/" data-testid="link-nav-home">
+          <a>
+            <Button size="sm" variant="ghost" aria-label="Home">
+              <HomeIcon className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">Home</span>
+            </Button>
+          </a>
+        </Link>
+      )}
+      {!onBuilder && (
+        <Link href="/build" data-testid="link-nav-new">
+          <a>
+            <Button size="sm" variant="outline" aria-label="New sheet">
+              <FilePlus2 className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">New sheet</span>
+            </Button>
+          </a>
+        </Link>
+      )}
+    </>
   );
 }
 
@@ -46,7 +78,10 @@ export default function AppShell({ children, actions }: { children: ReactNode; a
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto max-w-7xl px-3 sm:px-4 h-14 flex items-center justify-between gap-2 sm:gap-4 min-w-0">
           <div className="min-w-0 shrink overflow-hidden"><BrandMark /></div>
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">{actions}</div>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <NavActions />
+            {actions}
+          </div>
         </div>
       </header>
       <main className="relative z-10 mx-auto max-w-7xl px-3 sm:px-4 py-8">{children}</main>

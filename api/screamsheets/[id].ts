@@ -29,6 +29,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(toApi(data));
   }
 
+  // PUT /api/screamsheets/:id?owner=KEY -> update in place, only if the GM key matches.
+  if (req.method === "PUT") {
+    const owner = getOwner(req);
+    if (!owner) return res.status(403).json({ error: "A GM key is required to update." });
+
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    const { title, template, branding, settings, blocks } = body ?? {};
+    if (!title || !template || !branding || !settings || !Array.isArray(blocks)) {
+      return res.status(400).json({ error: "Invalid screamsheet payload" });
+    }
+
+    // Confirm ownership before writing.
+    const { data: existing, error: lookupErr } = await supabase
+      .from(TABLE)
+      .select("id, owner_key")
+      .eq("id", id)
+      .maybeSingle();
+    if (lookupErr) return res.status(500).json({ error: lookupErr.message });
+    if (!existing) return res.status(404).json({ error: "Not found" });
+    if (existing.owner_key !== owner)
+      return res.status(403).json({ error: "This screamsheet belongs to a different GM key." });
+
+    const { data, error } = await supabase
+      .from(TABLE)
+      .update({ title, template, branding, settings, blocks })
+      .eq("id", id)
+      .eq("owner_key", owner)
+      .select()
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json(toApi(data));
+  }
+
   // DELETE /api/screamsheets/:id?owner=KEY -> remove, but only if the GM key matches.
   if (req.method === "DELETE") {
     const owner = getOwner(req);
@@ -54,6 +87,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ ok: true });
   }
 
-  res.setHeader("Allow", "GET, DELETE");
+  res.setHeader("Allow", "GET, PUT, DELETE");
   return res.status(405).json({ error: "Method not allowed" });
 }

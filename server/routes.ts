@@ -36,6 +36,21 @@ export async function registerRoutes(
     res.json(safe);
   });
 
+  // Update a screamsheet in place, only if the GM key matches
+  app.put("/api/screamsheets/:id", async (req, res) => {
+    const owner = String(req.query.owner ?? "").trim();
+    const parsed = insertScreamsheetSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.flatten() });
+    }
+    const result = await storage.updateScreamsheet(req.params.id, owner, parsed.data);
+    if (result === "notfound") return res.status(404).json({ error: "Not found" });
+    if (result === "forbidden")
+      return res.status(403).json({ error: "This screamsheet belongs to a different GM key." });
+    const { ownerKey, ...safe } = result as any;
+    res.json(safe);
+  });
+
   // Delete a screamsheet, only if the GM key matches
   app.delete("/api/screamsheets/:id", async (req, res) => {
     const owner = String(req.query.owner ?? "").trim();

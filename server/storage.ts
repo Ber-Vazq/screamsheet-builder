@@ -33,6 +33,11 @@ export interface IStorage {
   createScreamsheet(data: InsertScreamsheet): Promise<Screamsheet>;
   getScreamsheet(id: string): Promise<Screamsheet | undefined>;
   listScreamsheets(ownerKey: string): Promise<Screamsheet[]>;
+  updateScreamsheet(
+    id: string,
+    ownerKey: string,
+    data: InsertScreamsheet,
+  ): Promise<Screamsheet | "notfound" | "forbidden">;
   deleteScreamsheet(id: string, ownerKey: string): Promise<"ok" | "notfound" | "forbidden">;
 }
 
@@ -60,6 +65,30 @@ export class DatabaseStorage implements IStorage {
     const key = ownerKey.trim();
     if (!key) return [];
     return db.select().from(screamsheets).where(eq(screamsheets.ownerKey, key)).all();
+  }
+
+  async updateScreamsheet(
+    id: string,
+    ownerKey: string,
+    data: InsertScreamsheet,
+  ): Promise<Screamsheet | "notfound" | "forbidden"> {
+    const key = ownerKey.trim();
+    if (!key) return "forbidden";
+    const existing = db.select().from(screamsheets).where(eq(screamsheets.id, id)).get();
+    if (!existing) return "notfound";
+    if (existing.ownerKey !== key) return "forbidden";
+    return db
+      .update(screamsheets)
+      .set({
+        title: data.title,
+        template: data.template,
+        branding: data.branding,
+        settings: data.settings,
+        blocks: data.blocks,
+      })
+      .where(eq(screamsheets.id, id))
+      .returning()
+      .get();
   }
 
   async deleteScreamsheet(id: string, ownerKey: string): Promise<"ok" | "notfound" | "forbidden"> {
