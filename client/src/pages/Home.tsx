@@ -1,0 +1,141 @@
+import { Link } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Screamsheet } from "@shared/schema";
+import { TEMPLATES } from "@/lib/templates";
+import AppShell from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { Trash2, ExternalLink, Plus, Newspaper } from "lucide-react";
+
+function TemplateCard({ id, name, description }: { id: string; name: string; description: string }) {
+  const isOptic = id === "augmented-optic";
+  const isCustom = id === "custom";
+  return (
+    <Link href={`/build/${id}`} data-testid={`card-template-${id}`}>
+      <a className="group block rounded-md border border-border bg-card hover-elevate overflow-hidden">
+        <div
+          className="h-32 flex items-center justify-center border-b border-border relative overflow-hidden"
+          style={{
+            background: isOptic
+              ? "#000"
+              : isCustom
+              ? "linear-gradient(135deg,#0a0a12,#1a1030)"
+              : "#fff",
+          }}
+        >
+          {isOptic ? (
+            <span style={{ fontFamily: "'Special Elite',monospace", color: "#fff", fontSize: 22 }}>The Optic 👁</span>
+          ) : isCustom ? (
+            <span style={{ fontFamily: "'Orbitron',sans-serif", color: "#00e0ff", fontSize: 18, fontWeight: 900 }}>+ CUSTOM</span>
+          ) : (
+            <span style={{ fontFamily: "'Orbitron',sans-serif", fontStyle: "italic", fontWeight: 900, fontSize: 30, color: "#8e6bd1" }}>NCT</span>
+          )}
+        </div>
+        <div className="p-3">
+          <div className="font-semibold text-sm uppercase tracking-wide" style={{ fontFamily: "'Rajdhani',sans-serif" }}>{name}</div>
+          <p className="text-xs text-muted-foreground mt-1 leading-snug">{description}</p>
+        </div>
+      </a>
+    </Link>
+  );
+}
+
+export default function Home() {
+  const { toast } = useToast();
+  const { data: sheets, isLoading } = useQuery<Screamsheet[]>({ queryKey: ["/api/screamsheets"] });
+
+  const del = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/screamsheets/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/screamsheets"] });
+      toast({ title: "Deleted", description: "Screamsheet removed from your library." });
+    },
+  });
+
+  const nctTemplates = TEMPLATES.filter((t) => t.branding.logoStyle === "nct");
+  const otherTemplates = TEMPLATES.filter((t) => t.branding.logoStyle !== "nct");
+
+  return (
+    <AppShell>
+      {/* Hero */}
+      <section className="mb-10">
+        <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-accent mb-3" style={{ fontFamily: "'Share Tech Mono',monospace" }}>
+          <span className="w-2 h-2 bg-accent rounded-full animate-pulse" /> Night City Press Terminal
+        </div>
+        <h1 className="text-xl font-bold uppercase tracking-tight max-w-3xl" style={{ fontFamily: "'Orbitron',sans-serif" }}>
+          Forge a screamsheet, drop it on your players
+        </h1>
+        <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
+          Pick a template, fill in the form, and export a print-ready sheet — or save a shareable link your crew can read in-browser. Built for Cyberpunk tables and any neon-soaked setting.
+        </p>
+      </section>
+
+      {/* Templates */}
+      <section className="mb-12">
+        <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+          <Newspaper className="w-4 h-4" /> Night City Today desks
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+          {nctTemplates.map((t) => (
+            <TemplateCard key={t.id} id={t.id} name={t.name} description={t.description} />
+          ))}
+        </div>
+        <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">Other outlets</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {otherTemplates.map((t) => (
+            <TemplateCard key={t.id} id={t.id} name={t.name} description={t.description} />
+          ))}
+        </div>
+      </section>
+
+      {/* Library */}
+      <section>
+        <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">Your library</h2>
+        {isLoading ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-24 rounded-md" />)}
+          </div>
+        ) : !sheets || sheets.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border p-8 text-center">
+            <p className="text-muted-foreground text-sm">No saved screamsheets yet. Build one and hit Save to get a shareable link.</p>
+            <Link href="/build">
+              <a><Button className="mt-4" data-testid="button-start-building"><Plus className="w-4 h-4 mr-1" /> Start building</Button></a>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sheets.map((s) => (
+              <div key={s.id} className="rounded-md border border-border bg-card p-4 hover-elevate" data-testid={`card-saved-${s.id}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm truncate" data-testid={`text-title-${s.id}`}>{s.title}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{s.branding.outlet} · {new Date(s.createdAt).toLocaleDateString()}</div>
+                  </div>
+                  <Button
+                    size="icon" variant="ghost"
+                    className="shrink-0 text-destructive"
+                    onClick={() => del.mutate(s.id)}
+                    data-testid={`button-delete-${s.id}`}
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Link href={`/s/${s.id}`}>
+                    <a className="flex-1"><Button size="sm" variant="outline" className="w-full" data-testid={`button-view-${s.id}`}><ExternalLink className="w-3.5 h-3.5 mr-1" /> Open</Button></a>
+                  </Link>
+                  <Link href={`/build/${s.template}?load=${s.id}`}>
+                    <a className="flex-1"><Button size="sm" variant="secondary" className="w-full" data-testid={`button-edit-${s.id}`}>Edit copy</Button></a>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </AppShell>
+  );
+}
