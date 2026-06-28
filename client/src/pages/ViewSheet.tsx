@@ -30,7 +30,11 @@ export default function ViewSheet() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground relative">
+      {/* HUD wireframe field */}
+      <div className="pointer-events-none fixed inset-0 hud-grid-field" aria-hidden />
+      <div className="pointer-events-none fixed inset-0 hud-radial" aria-hidden />
+      <div className="pointer-events-none fixed inset-0 hud-scanlines" aria-hidden />
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 h-14 flex items-center justify-between gap-4">
           <BrandMark />
@@ -47,7 +51,7 @@ export default function ViewSheet() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="relative z-10 mx-auto max-w-5xl px-4 py-8">
         {isLoading && <div className="text-center text-muted-foreground py-20">Decrypting transmission…</div>}
         {isError && (
           <div className="text-center py-20">

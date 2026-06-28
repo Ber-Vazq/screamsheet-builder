@@ -105,42 +105,43 @@
   --button-outline: rgba(255, 255, 255, 0.1);
   --badge-outline: rgba(255, 255, 255, 0.05);
   --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255, 255, 255, 0.04);
-  --elevate-2: rgba(255, 255, 255, 0.09);
-  --background: 240 18% 7%;
-  --foreground: 200 20% 92%;
-  --border: 250 12% 18%;
-  --card: 245 16% 10%;
-  --card-foreground: 200 20% 92%;
-  --card-border: 250 14% 16%;
-  --sidebar: 245 18% 9%;
-  --sidebar-foreground: 200 20% 92%;
-  --sidebar-border: 250 14% 16%;
-  --sidebar-primary: 320 90% 58%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 245 16% 15%;
-  --sidebar-accent-foreground: 200 20% 92%;
-  --sidebar-ring: 320 90% 58%;
-  --popover: 245 16% 11%;
-  --popover-foreground: 200 20% 92%;
-  --popover-border: 250 14% 18%;
-  --primary: 320 90% 58%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 245 16% 16%;
-  --secondary-foreground: 200 20% 92%;
-  --muted: 245 14% 15%;
-  --muted-foreground: 220 10% 62%;
-  --accent: 188 90% 50%;
-  --accent-foreground: 240 30% 8%;
-  --destructive: 350 80% 50%;
+  --elevate-1: rgba(255, 255, 255, 0.05);
+  --elevate-2: rgba(255, 255, 255, 0.11);
+  /* Y2K HUD palette: near-black navy field, chrome-grey surfaces, ice-blue accent */
+  --background: 222 38% 6%;
+  --foreground: 210 30% 92%;
+  --border: 215 18% 26%;
+  --card: 218 20% 14%;
+  --card-foreground: 210 30% 92%;
+  --card-border: 213 16% 30%;
+  --sidebar: 220 32% 8%;
+  --sidebar-foreground: 210 30% 92%;
+  --sidebar-border: 215 18% 24%;
+  --sidebar-primary: 200 95% 78%;
+  --sidebar-primary-foreground: 222 40% 8%;
+  --sidebar-accent: 218 18% 18%;
+  --sidebar-accent-foreground: 210 30% 92%;
+  --sidebar-ring: 200 95% 78%;
+  --popover: 219 22% 12%;
+  --popover-foreground: 210 30% 92%;
+  --popover-border: 213 16% 28%;
+  --primary: 200 95% 80%;
+  --primary-foreground: 222 44% 8%;
+  --secondary: 216 16% 22%;
+  --secondary-foreground: 210 30% 92%;
+  --muted: 217 16% 18%;
+  --muted-foreground: 212 14% 64%;
+  --accent: 198 90% 72%;
+  --accent-foreground: 222 44% 8%;
+  --destructive: 6 72% 56%;
   --destructive-foreground: 0 0% 100%;
-  --input: 250 14% 22%;
-  --ring: 320 90% 58%;
-  --chart-1: 320 90% 60%;
-  --chart-2: 188 90% 55%;
-  --chart-3: 173 58% 55%;
-  --chart-4: 43 74% 65%;
-  --chart-5: 27 87% 65%;
+  --input: 215 18% 28%;
+  --ring: 200 95% 78%;
+  --chart-1: 200 95% 78%;
+  --chart-2: 198 60% 60%;
+  --chart-3: 210 20% 70%;
+  --chart-4: 188 45% 55%;
+  --chart-5: 220 14% 50%;
   --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0);
   --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0);
   --shadow-sm: 0px 2px 0px 0px hsl(0 0% 0% / 0), 0px 1px 2px -1px hsl(0 0% 0% / 0);
@@ -312,6 +313,90 @@
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
+  }
+}
+
+/* ============================================================
+   Y2K HUD APP CHROME
+   Wireframe grids, notched chrome panels, reticle accents.
+   Applies ONLY to the dark app shell — never to .screamsheet.
+   ============================================================ */
+@layer utilities {
+  /* Perspective wireframe field used behind the shell */
+  .hud-grid-field {
+    background-image:
+      linear-gradient(hsl(200 80% 70% / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(200 80% 70% / 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+    background-position: center;
+  }
+  .hud-scanlines {
+    background-image: repeating-linear-gradient(
+      0deg,
+      hsl(210 30% 92% / 0.03) 0px,
+      hsl(210 30% 92% / 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+  .hud-radial {
+    background:
+      radial-gradient(circle at 18% 0%, hsl(200 90% 60% / 0.10), transparent 42%),
+      radial-gradient(circle at 100% 100%, hsl(210 40% 40% / 0.10), transparent 46%);
+  }
+
+  /* Notched chrome panel — clipped top-left + bottom-right corners like the ref cards */
+  .hud-panel {
+    clip-path: polygon(
+      0 14px, 14px 0,
+      100% 0,
+      100% calc(100% - 14px), calc(100% - 14px) 100%,
+      0 100%
+    );
+  }
+  .hud-panel-r {
+    clip-path: polygon(
+      0 0,
+      calc(100% - 14px) 0, 100% 14px,
+      100% 100%,
+      14px 100%, 0 calc(100% - 14px)
+    );
+  }
+
+  /* Corner bracket reticle (HUD framing ticks) */
+  .hud-brackets {
+    position: relative;
+  }
+  .hud-brackets::before,
+  .hud-brackets::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    border-color: hsl(var(--primary) / 0.7);
+  }
+  .hud-brackets::before {
+    top: 6px; left: 6px;
+    border-top: 2px solid; border-left: 2px solid;
+  }
+  .hud-brackets::after {
+    bottom: 6px; right: 6px;
+    border-bottom: 2px solid; border-right: 2px solid;
+  }
+
+  /* Slow rotating reticle ring for decorative HUD dials */
+  @keyframes hud-spin {
+    to { transform: rotate(360deg); }
+  }
+  .hud-spin {
+    animation: hud-spin 18s linear infinite;
+  }
+  .hud-spin-rev {
+    animation: hud-spin 26s linear infinite reverse;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hud-spin, .hud-spin-rev { animation: none; }
   }
 }
 

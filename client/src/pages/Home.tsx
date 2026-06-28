@@ -65,21 +65,21 @@ function TemplateCard({ id, name, description, active }: { id: string; name: str
   const isCustom = id === "custom";
   return (
     <Link href={`/build/${id}`} data-testid={`card-template-${id}`}>
-      <a className="group block rounded-md border border-border bg-card hover-elevate overflow-hidden">
+      <a className="group block border border-card-border bg-card hover-elevate overflow-hidden hud-panel">
         <div
-          className="h-32 flex items-center justify-center border-b border-border relative overflow-hidden"
+          className="h-32 flex items-center justify-center border-b border-card-border relative overflow-hidden"
           style={{
             background: isOptic
               ? "#000"
               : isCustom
-              ? "linear-gradient(135deg,#0a0a12,#1a1030)"
+              ? "linear-gradient(135deg,hsl(220 32% 8%),hsl(216 24% 16%))"
               : "#fff",
           }}
         >
           {isOptic ? (
             <span style={{ fontFamily: "'Special Elite',monospace", color: "#fff", fontSize: 22 }}>The Optic 👁</span>
           ) : isCustom ? (
-            <span style={{ fontFamily: "'Orbitron',sans-serif", color: "#00e0ff", fontSize: 18, fontWeight: 900 }}>+ CUSTOM</span>
+            <span className="text-primary" style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 18, fontWeight: 900, letterSpacing: "0.05em" }}>+ CUSTOM</span>
           ) : (
             <NctThumb active={active || "NEWS"} />
           )}
@@ -111,9 +111,9 @@ export default function Home() {
   return (
     <AppShell>
       {/* Hero */}
-      <section className="mb-10">
-        <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-accent mb-3" style={{ fontFamily: "'Share Tech Mono',monospace" }}>
-          <span className="w-2 h-2 bg-accent rounded-full animate-pulse" /> Night City Press Terminal
+      <section className="mb-10 relative border border-card-border bg-card/60 hud-panel hud-brackets px-6 py-6 overflow-hidden">
+        <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-primary mb-3" style={{ fontFamily: "'Share Tech Mono',monospace" }}>
+          <span className="w-2 h-2 bg-primary rounded-full animate-pulse" /> Night City Press Terminal
         </div>
         <h1 className="text-xl font-bold uppercase tracking-tight max-w-3xl" style={{ fontFamily: "'Orbitron',sans-serif" }}>
           Forge a screamsheet, drop it on your players
@@ -149,7 +149,7 @@ export default function Home() {
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-24 rounded-md" />)}
           </div>
         ) : !sheets || sheets.length === 0 ? (
-          <div className="rounded-md border border-dashed border-border p-8 text-center">
+          <div className="border border-dashed border-border p-8 text-center hud-panel bg-card/40">
             <p className="text-muted-foreground text-sm">No saved screamsheets yet. Build one and hit Save to get a shareable link.</p>
             <Link href="/build">
               <a><Button className="mt-4" data-testid="button-start-building"><Plus className="w-4 h-4 mr-1" /> Start building</Button></a>
@@ -158,7 +158,7 @@ export default function Home() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {sheets.map((s) => (
-              <div key={s.id} className="rounded-md border border-border bg-card p-4 hover-elevate" data-testid={`card-saved-${s.id}`}>
+              <div key={s.id} className="border border-card-border bg-card p-4 hover-elevate hud-panel" data-testid={`card-saved-${s.id}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-semibold text-sm truncate" data-testid={`text-title-${s.id}`}>{s.title}</div>

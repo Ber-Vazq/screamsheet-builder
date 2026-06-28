@@ -159,8 +159,8 @@ export default function Builder() {
           </div>
 
           {/* Masthead / branding */}
-          <fieldset className="rounded-md border border-border bg-card p-4 space-y-3">
-            <legend className="px-2 text-xs uppercase tracking-widest text-accent font-semibold">Masthead</legend>
+          <fieldset className="border border-card-border bg-card p-4 space-y-3 hud-panel">
+            <legend className="px-2 text-xs uppercase tracking-widest text-primary font-semibold">Masthead</legend>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs text-muted-foreground">Clock</Label>
@@ -232,7 +232,7 @@ export default function Builder() {
           {/* Blocks */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-xs uppercase tracking-widest text-accent font-semibold">Content blocks</h2>
+              <h2 className="text-xs uppercase tracking-widest text-primary font-semibold">Content blocks</h2>
               <span className="text-xs text-muted-foreground">{blocks.length} block{blocks.length === 1 ? "" : "s"}</span>
             </div>
 
@@ -247,7 +247,7 @@ export default function Builder() {
               />
             ))}
 
-            <div className="rounded-md border border-dashed border-border p-3">
+            <div className="border border-dashed border-border p-3 hud-panel">
               <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1"><Plus className="w-3 h-3" /> Add block</div>
               <div className="flex flex-wrap gap-2">
                 {BLOCK_TYPES.map((bt) => (
@@ -260,13 +260,13 @@ export default function Builder() {
           </div>
 
           {shareUrl && (
-            <div className="rounded-md border border-accent/40 bg-accent/5 p-3">
-              <div className="text-xs uppercase tracking-widest text-accent font-semibold mb-2 flex items-center gap-1"><Link2 className="w-3.5 h-3.5" /> Shareable link</div>
+            <div className="border border-primary/40 bg-primary/5 p-3 hud-panel hud-brackets">
+              <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-2 flex items-center gap-1"><Link2 className="w-3.5 h-3.5" /> Shareable link</div>
               <div className="flex gap-2">
                 <Input readOnly value={shareUrl} className="text-xs" data-testid="input-sharelink" />
                 <Button size="icon" variant="outline" onClick={copyLink} data-testid="button-copy"><Copy className="w-4 h-4" /></Button>
               </div>
-              <a href={shareUrl} target="_blank" rel="noreferrer" className="text-xs text-accent underline mt-2 inline-block">Open the player view →</a>
+              <a href={shareUrl} target="_blank" rel="noreferrer" className="text-xs text-primary underline mt-2 inline-block">Open the player view →</a>
             </div>
           )}
         </div>
@@ -275,7 +275,7 @@ export default function Builder() {
         <div className="relative">
           <div className="lg:sticky lg:top-20">
             <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Live preview</div>
-            <div className="rounded-md border border-border bg-[#222] overflow-auto p-4 max-h-[78vh] flex justify-center">
+            <div className="border border-card-border bg-background hud-grid-field hud-panel overflow-auto p-4 max-h-[78vh] flex justify-center">
               <div style={{ width: 816 * previewScale, flexShrink: 0 }}>
                 <div style={{ transform: `scale(${previewScale})`, transformOrigin: "top left", width: 816 }}>
                   <SheetRenderer ref={sheetRef} branding={branding} settings={settings} blocks={blocks} />
@@ -305,7 +305,7 @@ function BlockEditor({
     pullquote: "Pull quote", ad: "Ad", sidebar: "Sidebar", brief: "Brief", divider: "Divider",
   };
   return (
-    <div className="rounded-md border border-border bg-card p-3" data-testid={`block-${block.type}-${block.id}`}>
+    <div className="border border-card-border bg-card p-3 hud-panel" data-testid={`block-${block.type}-${block.id}`}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{labelMap[block.type]}</span>
         <div className="flex items-center gap-0.5">
