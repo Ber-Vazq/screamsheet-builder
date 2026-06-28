@@ -6,7 +6,7 @@ functions**. Follow it to reproduce the setup, recover from scratch, or adapt it
 another table.
 
 - **Live app:** https://screamsheet.vercel.app
-- **Supabase project:** `screamsheet` (ref `ujqndhhzaqmnacotktif`, region `us-east-2`)
+- **Supabase project:** `screamsheet` (ref `<your-project-ref>`, region `us-east-2`)
 - **Vercel project:** `ber-vazqs-projects/screamsheet`
 
 ---
@@ -83,7 +83,7 @@ create policy "public_delete" on public.screamsheets for delete using (true);
 
 In the dashboard: **Project Settings → API**.
 
-- **Project URL** → `https://ujqndhhzaqmnacotktif.supabase.co`
+- **Project URL** → `https://<your-project-ref>.supabase.co`
 - **anon / public key** (the long JWT starting with `eyJ...`) → used by the backend.
 
 > Use the **legacy anon JWT key**, not the newer `sb_publishable_...` key —
@@ -92,8 +92,8 @@ In the dashboard: **Project Settings → API**.
 Put them in a local `.env` (already gitignored — never commit this):
 
 ```
-SUPABASE_URL=https://ujqndhhzaqmnacotktif.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...      # full anon JWT
+SUPABASE_URL=https://<your-project-ref>.supabase.co
+SUPABASE_ANON_KEY=<your-anon-jwt>      # full anon JWT
 ```
 
 ---
@@ -177,7 +177,7 @@ vercel link --yes --project screamsheet
 
 # 2. Push the Supabase secrets to Vercel (run once per variable per environment).
 #    These are stored encrypted on Vercel, NOT in your repo.
-printf "%s" "https://ujqndhhzaqmnacotktif.supabase.co" | vercel env add SUPABASE_URL production
+printf "%s" "https://<your-project-ref>.supabase.co" | vercel env add SUPABASE_URL production
 printf "%s" "<anon-jwt>"                                 | vercel env add SUPABASE_ANON_KEY production
 #    (repeat for `preview` and `development` if you want those environments to work too)
 
