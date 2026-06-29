@@ -53,6 +53,42 @@ function NavActions() {
   );
 }
 
+// Persistent disclaimer + optional-support footer. Lives in the dark app chrome
+// (outside <main> and never inside .screamsheet), so it is NOT part of the
+// exported sheet. Carries RTG's required Homebrew Content Policy language.
+function SiteFooter() {
+  return (
+    <footer className="site-footer relative z-10 mt-12 border-t border-border bg-background/60" data-testid="site-footer">
+      <div className="mx-auto max-w-3xl px-4 py-8 space-y-3 text-center text-[11px] sm:text-xs leading-relaxed text-muted-foreground">
+        <p>
+          Screamsheet Generator is unofficial content provided under the Homebrew Content
+          Policy of R. Talsorian Games and is not approved or endorsed by RTG. This content
+          references materials that are the property of R. Talsorian Games and its licensees.
+        </p>
+        <p>
+          This tool is free to use and will remain free for the community. If you&rsquo;d like to
+          help cover domain, hosting, and AI token costs, you can support the project with an
+          optional donation on{" "}
+          <a
+            href="https://ko-fi.com/stb3rn4rd"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline underline-offset-2 hover:text-primary/80"
+            data-testid="link-kofi"
+          >
+            Ko-fi
+          </a>
+          . Donations do not unlock additional content, features, or access.
+        </p>
+        <p>
+          All trademarks, product names, and setting elements are the property of their
+          respective owners.
+        </p>
+      </div>
+    </footer>
+  );
+}
+
 export default function AppShell({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground relative">
@@ -85,6 +121,7 @@ export default function AppShell({ children, actions }: { children: ReactNode; a
         </div>
       </header>
       <main className="relative z-10 mx-auto max-w-7xl px-3 sm:px-4 py-8">{children}</main>
+      <SiteFooter />
     </div>
   );
 }
