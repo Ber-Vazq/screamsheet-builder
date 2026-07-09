@@ -45,6 +45,9 @@ export default function Builder() {
   const [blocks, setBlocks] = useState<Block[]>(starterBlocks());
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [categoryRaw, setCategoryRaw] = useState(
+    tpl.settings.categories.join(", ")
+  );
   // When set, we're editing an existing sheet in place (Save overwrites it).
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -72,6 +75,7 @@ export default function Builder() {
           setTitle(editId ? s.title : s.title + " (copy)");
           setBranding(s.branding);
           setSettings(s.settings);
+          setCategoryRaw(s.settings.categories.join(", "))
           setBlocks(s.blocks);
           setEditingId(editId ? sourceId : null);
         })
@@ -79,6 +83,7 @@ export default function Builder() {
     } else {
       setBranding(tpl.branding);
       setSettings(tpl.settings);
+      setCategoryRaw(tpl.settings.categories.join(", "))
       setBlocks(starterBlocks());
       setTitle(tpl.name === "Custom Outlet" ? "Untitled Screamsheet" : tpl.name);
       setEditingId(null);
@@ -288,12 +293,23 @@ export default function Builder() {
                 <div>
                   <Label className="text-xs text-muted-foreground">Category tabs (comma separated)</Label>
                   <Input
-                    value={settings.categories.join(", ")}
-                    onChange={(e) => {
-                      const cats = e.target.value.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
-                      setSettings({ ...settings, categories: cats, activeCategory: cats.includes(settings.activeCategory) ? settings.activeCategory : cats[0] ?? "" });
+                    value={categoryRaw}
+                    onChange={(e) => setCategoryRaw(e.target.value)}
+                    onBlur= {() => {
+                      const cats = categoryRaw
+                        .split(",")
+                        .map((s) => s.trim().toUpperCase())
+                        .filter(Boolean)
+                        .slice(0, 8);
+                      setSettings({
+                        ...settings,
+                        categories: cats,
+                        activeCategory: cats.includes(settings.activeCategory) ? settings.activeCategory : cats[0] ?? "",
+                      });
+                      setCategoryRaw(cats.join(", "));
                     }}
-                    className="mt-1" data-testid="input-categories"
+                    className="mt-1"
+                    data-testid="input-categories"
                   />
                 </div>
               </div>
