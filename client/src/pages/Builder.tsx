@@ -530,6 +530,12 @@ function BlockEditor({
                 className="mt-1 h-8 w-full rounded border border-border bg-transparent"
                 data-testid={`input-ad-bgcolor-${block.id}`}
               />
+              <label className="text-xs text-muted-foreground">Text color</label>
+              <input
+                type="color"
+                value={block.textColor ?? "#111111"}
+                onChange={e => updateBlock(block.id, { textColor: e.target.value })}
+              />
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Background image</Label>
