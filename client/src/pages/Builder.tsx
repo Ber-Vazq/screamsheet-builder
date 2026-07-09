@@ -482,6 +482,35 @@ function BlockEditor({
         <div className="space-y-2">
           <Input value={block.text} onChange={(e) => onChange({ text: e.target.value })} placeholder="Ad copy" data-testid={`input-ad-${block.id}`} />
           <Input value={block.sponsor} onChange={(e) => onChange({ sponsor: e.target.value })} placeholder="Sponsor" data-testid={`input-sponsor-${block.id}`} />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Background color</Label>
+              <input
+                type="color"
+                value={block.bgColor ?? "#ffffff"}
+                onChange={(e) => onChange({ bgColor: e.target.value })}
+                className="mt-1 h-8 w-full rounded border border-border bg-transparent"
+                data-testid={`input-ad-bgcolor-${block.id}`}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Background image</Label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => onChange({ bgImage: reader.result as string });
+                  reader.readAsDataURL(file);
+                }}
+                className="text-xs mt-1"
+                data-testid={`input-ad-bgimage-${block.id}`}
+              />
+            </div>
+          </div>
+
         </div>
       )}
       {(block.type === "sidebar" || block.type === "brief") && (
