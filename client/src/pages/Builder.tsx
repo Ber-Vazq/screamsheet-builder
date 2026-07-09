@@ -45,6 +45,9 @@ export default function Builder() {
   const [blocks, setBlocks] = useState<Block[]>(starterBlocks());
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [categoryRaw, setCategoryRaw] = useState(
+    tpl.settings.categories.join(", ")
+  );
   // When set, we're editing an existing sheet in place (Save overwrites it).
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -72,6 +75,7 @@ export default function Builder() {
           setTitle(editId ? s.title : s.title + " (copy)");
           setBranding(s.branding);
           setSettings(s.settings);
+          setCategoryRaw(s.settings.categories.join(", "))
           setBlocks(s.blocks);
           setEditingId(editId ? sourceId : null);
         })
@@ -79,6 +83,7 @@ export default function Builder() {
     } else {
       setBranding(tpl.branding);
       setSettings(tpl.settings);
+      setCategoryRaw(tpl.settings.categories.join(", "))
       setBlocks(starterBlocks());
       setTitle(tpl.name === "Custom Outlet" ? "Untitled Screamsheet" : tpl.name);
       setEditingId(null);
@@ -280,6 +285,38 @@ export default function Builder() {
                     <Label className="text-xs text-muted-foreground">Header text</Label>
                     <input type="color" value={branding.headerText} onChange={(e) => setBranding({ ...branding, headerText: e.target.value })} className="mt-1 h-9 w-full rounded border border-border bg-transparent" data-testid="input-headertext" />
                   </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Custom logo image (optional)</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () =>
+                            setBranding({
+                              ...branding,
+                              logoStyle: "custom-image",
+                              logoSrc: reader.result as string,
+                            });
+                          reader.readAsDataURL(file);
+                        }}
+                        className="text-xs"
+                        data-testid="input-logo-upload"
+                      />
+                      {branding.logoSrc && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setBranding({ ...branding, logoStyle: "text", logoSrc: "" })}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Show category nav</Label>
@@ -288,13 +325,30 @@ export default function Builder() {
                 <div>
                   <Label className="text-xs text-muted-foreground">Category tabs (comma separated)</Label>
                   <Input
-                    value={settings.categories.join(", ")}
-                    onChange={(e) => {
-                      const cats = e.target.value.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
-                      setSettings({ ...settings, categories: cats, activeCategory: cats.includes(settings.activeCategory) ? settings.activeCategory : cats[0] ?? "" });
+                    value={categoryRaw}
+                    onChange={(e) => setCategoryRaw(e.target.value)}
+                    onBlur= {() => {
+                      const cats = categoryRaw
+                        .split(",")
+                        .map((s) => s.trim().toUpperCase())
+                        .filter(Boolean)
+                        .slice(0, 8);
+                      setSettings({
+                        ...settings,
+                        categories: cats,
+                        activeCategory: cats.includes(settings.activeCategory) ? settings.activeCategory : cats[0] ?? "",
+                      });
+                      setCategoryRaw(cats.join(", "));
                     }}
-                    className="mt-1" data-testid="input-categories"
+                    className="mt-1"
+                    data-testid="input-categories"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {settings.categories.length}/8 categories
+                    {settings.categories.length >= 8 && (
+                      <span className="text-destructive ml-2">Maximum reached</span>
+                    )}
+                  </p>
                 </div>
               </div>
             )}
