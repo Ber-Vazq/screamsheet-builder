@@ -1,5 +1,5 @@
-import { forwardRef } from "react";
-import type { Branding, SheetSettings, Block } from "@shared/schema";
+import React, { forwardRef } from "react";
+import type { Branding, SheetSettings, Block, TwoColumnSlot } from "@shared/schema";
 
 type Props = {
   branding: Branding;
@@ -75,9 +75,15 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
           {block.text || "\u00a0"}
         </p>
       );
-    case "image":
+    case "image": {
+      const pos = block.position ?? "inline";
+      const style: React.CSSProperties =
+        pos === "above-headline" ? { columnSpan: "all", width: "100%", marginBottom: 12 } :
+        pos === "float-right"    ? { float: "right", width: "40%", margin: "0 0 8px 12px", clear: "right" } :
+        pos === "float-left"     ? { float: "left",  width: "40%", margin: "0 12px 8px 0", clear: "left" } :
+        {};
       return (
-        <figure className="ss-figure">
+        <figure className="ss-figure" style={style}>
           {block.src ? (
             <img src={block.src} alt={block.caption} crossOrigin="anonymous" />
           ) : (
@@ -88,6 +94,7 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
           {block.caption && <figcaption className="ss-caption">{block.caption}</figcaption>}
         </figure>
       );
+    }
     case "pullquote":
       return (
         <blockquote className="ss-pullquote">
@@ -97,7 +104,13 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
       );
     case "ad":
       return (
-        <div className="ss-ad">
+        <div className="ss-ad"
+          style={{
+            backgroundColor: block.bgColor ?? undefined,
+            backgroundImage: block.bgImage ? `url(${block.bgImage})` : undefined,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}>
           <div className="ss-ad-body">{block.text}</div>
           {block.sponsor && <div className="ss-ad-sponsor">{block.sponsor}</div>}
         </div>
@@ -118,6 +131,13 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
       );
     case "divider":
       return <hr className="ss-divider" />;
+    case "two-column":
+      return (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, columnSpan: "all", breakInside: "avoid" }}>
+          <TwoColSlot slot={block.left} />
+          <TwoColSlot slot={block.right} />
+        </div>
+      );
   }
 }
 
@@ -196,7 +216,11 @@ const SheetRenderer = forwardRef<HTMLDivElement, Props>(({ branding, settings, b
 
       {settings.ticker && <div className="ss-ticker">▸ {settings.ticker}</div>}
 
-      <div className="ss-body">
+      <div className="ss-body" style={{
+        columnCount: settings.columns ?? 1,
+        columnGap: 24,
+        columnFill: "balance",
+      }}>
         {blocks.length === 0 ? (
           <p className="ss-para" style={{ textAlign: "center", color: "#999" }}>
             Add content blocks to build your screamsheet.
@@ -210,4 +234,25 @@ const SheetRenderer = forwardRef<HTMLDivElement, Props>(({ branding, settings, b
 });
 
 SheetRenderer.displayName = "SheetRenderer";
+
+// ------------------------- Two Column function --------------------------------
+function TwoColSlot({ slot }: { slot: TwoColumnSlot }) {
+  if (slot.kind === "image") {
+    return (
+      <figure style={{ margin: 0 }}>
+        {slot.src ? (
+          <img src={slot.src} alt={slot.caption} crossOrigin="anonymous"
+            style={{
+              width: "100%", height: "auto", display: "block"}} />
+        ) : (
+            <div style={{ width: "100%", height: 160, border: "3px dashed #111", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Share Tech Mono',monospace", color: "#888" }}>
+              [ NO IMAGE ]
+            </div>
+        )}
+        {slot.caption && <figcaption className="ss-caption">{slot.caption}</figcaption>}
+      </figure>
+    );
+    }
+  return <p className="ss-para" style={{ margin: 0 }}>{slot.content || "\u00a0"}</p>;
+}
 export default SheetRenderer;

@@ -119,5 +119,8 @@ export function newBlock(type: Block["type"]): Block {
     case "sidebar": return { id, type, heading: "SIDEBAR", text: "Supporting details and context." };
     case "brief": return { id, type, heading: "BRIEF", text: "Short news brief." };
     case "divider": return { id, type };
+    case "two-column": return {
+      id, type: "two-column", left: { kind: "text", content: "Left column text." }, right: { kind: "text", content: "Right column text."}
+    }
   }
 }

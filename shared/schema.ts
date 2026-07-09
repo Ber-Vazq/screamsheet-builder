@@ -36,18 +36,30 @@ export type SheetSettings = {
   activeCategory: string; // which tab is highlighted in accent
   showNav: boolean; // tabloid templates hide the nav grid
   ticker: string; // optional scrolling breaking-news line
+  columns: 1 | 2 | 3; // multi column layout
 };
+
+export type TwoColumnSlot =
+  | { kind: "image"; src: string; caption: string }
+  | { kind: "text"; content: string };
+
+export type ImagePosition =
+  | "inline"
+  | "above-headline"
+  | "float-right"
+  | "float-left";
 
 export type Block =
   | { id: string; type: "headline"; text: string; size: "lead" | "section" }
   | { id: string; type: "byline"; author: string; dateline: string }
   | { id: string; type: "paragraph"; text: string }
-  | { id: string; type: "image"; src: string; caption: string }
+  | { id: string; type: "image"; src: string; caption: string; position?: ImagePosition; colSpan?: 1 | 2;}
   | { id: string; type: "pullquote"; text: string; attribution: string }
-  | { id: string; type: "ad"; text: string; sponsor: string }
+  | { id: string; type: "ad"; text: string; sponsor: string; bgColor?: string; bgImage?: string; }
   | { id: string; type: "sidebar"; heading: string; text: string }
   | { id: string; type: "brief"; heading: string; text: string }
-  | { id: string; type: "divider" };
+  | { id: string; type: "divider" }
+  | { id: string; type: "two-column"; left: TwoColumnSlot; right: TwoColumnSlot };
 
 export const blockSchema: z.ZodType<Block> = z.any();
 export const brandingSchema: z.ZodType<Branding> = z.any();
