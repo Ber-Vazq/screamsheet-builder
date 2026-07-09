@@ -36,6 +36,7 @@ export type SheetSettings = {
   activeCategory: string; // which tab is highlighted in accent
   showNav: boolean; // tabloid templates hide the nav grid
   ticker: string; // optional scrolling breaking-news line
+  columns: 1 | 2 | 3; // multi column layout
 };
 
 export type TwoColumnSlot =

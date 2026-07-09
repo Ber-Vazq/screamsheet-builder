@@ -358,6 +358,23 @@ export default function Builder() {
               <Label className="text-xs text-muted-foreground">Breaking-news ticker (optional)</Label>
               <Input value={settings.ticker} onChange={(e) => setSettings({ ...settings, ticker: e.target.value })} className="mt-1" placeholder="Scrolling line under the masthead" data-testid="input-ticker" />
             </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Body columns</Label>
+              <Select value={String(settings.columns ?? 1)}
+                onValueChange={(v) =>
+                  setSettings({ ...settings, columns: Number(v) as 1 | 2 | 3})
+                  }
+              >
+                <SelectTrigger className="mt-1" data-testid="select-columns">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Single Column</SelectItem>
+                  <SelectItem value="2">Two columns</SelectItem>
+                  <SelectItem value="3">Three columns</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </fieldset>
 
           {/* Blocks */}

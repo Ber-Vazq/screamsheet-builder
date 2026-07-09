@@ -209,7 +209,11 @@ const SheetRenderer = forwardRef<HTMLDivElement, Props>(({ branding, settings, b
 
       {settings.ticker && <div className="ss-ticker">▸ {settings.ticker}</div>}
 
-      <div className="ss-body">
+      <div className="ss-body" style={{
+        columnCount: settings.columns ?? 1,
+        columnGap: 24,
+        columnFill: "auto",
+      }}>
         {blocks.length === 0 ? (
           <p className="ss-para" style={{ textAlign: "center", color: "#999" }}>
             Add content blocks to build your screamsheet.
