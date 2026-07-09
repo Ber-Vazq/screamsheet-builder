@@ -311,6 +311,12 @@ export default function Builder() {
                     className="mt-1"
                     data-testid="input-categories"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {settings.categories.length}/8 categories
+                    {settings.categories.length >= 8 && (
+                      <span className="text-destructive ml-2">Maximum reached</span>
+                    )}
+                  </p>
                 </div>
               </div>
             )}
