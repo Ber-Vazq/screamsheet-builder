@@ -33,6 +33,7 @@ function nct(id: string, active: string): TemplateDef {
       activeCategory: active,
       showNav: true,
       ticker: "",
+      columns: 1,
     },
   };
 }
@@ -64,6 +65,7 @@ export const TEMPLATES: TemplateDef[] = [
       activeCategory: "",
       showNav: false,
       ticker: "THE EYE SEES ALL // TRUST NO CORP // STAY JACKED IN",
+      columns: 1,
     },
   },
   {
@@ -84,6 +86,7 @@ export const TEMPLATES: TemplateDef[] = [
       activeCategory: "NEWS",
       showNav: true,
       ticker: "",
+      columns: 1,
     },
   },
 ];

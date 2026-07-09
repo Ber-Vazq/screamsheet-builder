@@ -55,7 +55,7 @@ export type Block =
   | { id: string; type: "paragraph"; text: string }
   | { id: string; type: "image"; src: string; caption: string; position?: ImagePosition; colSpan?: 1 | 2;}
   | { id: string; type: "pullquote"; text: string; attribution: string }
-  | { id: string; type: "ad"; text: string; sponsor: string; bgColor?: string; bgImage?: string; }
+  | { id: string; type: "ad"; text: string; sponsor: string; bgColor?: string; bgImage?: string; textColor: string; }
   | { id: string; type: "sidebar"; heading: string; text: string }
   | { id: string; type: "brief"; heading: string; text: string }
   | { id: string; type: "divider" }

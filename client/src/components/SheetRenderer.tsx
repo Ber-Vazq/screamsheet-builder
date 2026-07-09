@@ -102,19 +102,30 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
           {block.attribution && <span className="ss-attr">{block.attribution}</span>}
         </blockquote>
       );
-    case "ad":
-      return (
-        <div className="ss-ad"
-          style={{
-            backgroundColor: block.bgColor ?? undefined,
-            backgroundImage: block.bgImage ? `url(${block.bgImage})` : undefined,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}>
-          <div className="ss-ad-body">{block.text}</div>
-          {block.sponsor && <div className="ss-ad-sponsor">{block.sponsor}</div>}
-        </div>
-      );
+      case "ad":
+        const hasCustomBg = !!block.bgColor || !!block.bgImage;
+        return (
+          <div style={{ columnSpan: "all" }}>
+            <div
+              className="ss-ad"
+              style={{
+                // Only apply the stripe pattern when the user hasn't set a custom background
+                background: hasCustomBg
+                  ? (block.bgImage
+                      ? `url(${block.bgImage})`
+                      : block.bgColor ?? undefined)
+                  : "repeating-linear-gradient(45deg,#fff,#fff 10px,#f2f2f2 10px,#f2f2f2 20px)",
+                backgroundSize: block.bgImage ? "cover" : undefined,
+                backgroundPosition: block.bgImage ? "center" : undefined,
+                // Text color — falls back to #111 if not set
+                color: block.textColor ?? "#111111",
+              }}
+            >
+              <div className="ss-ad-body">{block.text}</div>
+              {block.sponsor && <div className="ss-ad-sponsor">{block.sponsor}</div>}
+            </div>
+          </div>
+        );
     case "sidebar":
       return (
         <aside className="ss-sidebar">
