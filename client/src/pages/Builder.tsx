@@ -285,6 +285,38 @@ export default function Builder() {
                     <Label className="text-xs text-muted-foreground">Header text</Label>
                     <input type="color" value={branding.headerText} onChange={(e) => setBranding({ ...branding, headerText: e.target.value })} className="mt-1 h-9 w-full rounded border border-border bg-transparent" data-testid="input-headertext" />
                   </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Custom logo image (optional)</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () =>
+                            setBranding({
+                              ...branding,
+                              logoStyle: "custom-image",
+                              logoSrc: reader.result as string,
+                            });
+                          reader.readAsDataURL(file);
+                        }}
+                        className="text-xs"
+                        data-testid="input-logo-upload"
+                      />
+                      {branding.logoSrc && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setBranding({ ...branding, logoStyle: "text", logoSrc: "" })}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Show category nav</Label>

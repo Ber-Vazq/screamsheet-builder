@@ -26,7 +26,8 @@ export type Branding = {
   accent: string; // hex highlight color for active tab / rules
   headerBg: string; // hex masthead background
   headerText: string; // hex masthead text
-  logoStyle: "nct" | "optic" | "text"; // which built-in logo treatment
+  logoStyle: "nct" | "optic" | "text" | "custom-image";
+  logoSrc?: string;// which built-in logo treatment
 };
 
 export type SheetSettings = {

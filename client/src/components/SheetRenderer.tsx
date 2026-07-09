@@ -157,7 +157,14 @@ const SheetRenderer = forwardRef<HTMLDivElement, Props>(({ branding, settings, b
           <div style={{ flexShrink: 0 }}>
             {branding.logoStyle === "nct" ? (
               <NCTLogo />
-            ) : (
+              ) : branding.logoStyle === "custom-image" && branding.logoSrc ? (
+                  <img
+                    src={branding.logoSrc}
+                    alt={branding.outlet}
+                    crossOrigin="anonymous"
+                    style={{ maxHeight: 64, maxWidth: 200, objectFit: "contain" }}
+                  />
+              ) : (
               <div style={{ lineHeight: 1 }}>
                 <div style={{ fontFamily: "'Orbitron',sans-serif", fontWeight: 900, fontSize: 26, color: branding.accent }}>
                   {branding.outlet}
