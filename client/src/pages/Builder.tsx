@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearch, useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
-import type { Branding, SheetSettings, Block, Screamsheet } from "@shared/schema";
+import type { Branding, SheetSettings, Block, Screamsheet, ImagePosition } from "@shared/schema";
 import { getTemplate, starterBlocks, newBlock } from "@/lib/templates";
 import { getGmKey } from "@/lib/gmKey";
 import SheetRenderer from "@/components/SheetRenderer";
@@ -486,10 +486,30 @@ function BlockEditor({
       )}
       {block.type === "image" && (
         <div className="space-y-2">
-          <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && onImage(e.target.files[0])} className="text-xs" data-testid={`input-imagefile-${block.id}`} />
-          <Input value={block.caption} onChange={(e) => onChange({ caption: e.target.value })} placeholder="Caption" data-testid={`input-caption-${block.id}`} />
+          <input type="file" accept="image/*"
+            onChange={(e) => e.target.files?.[0] && onImage(e.target.files[0])}
+            className="text-xs" data-testid={`input-imagefile-${block.id}`} />
+          <Input value={block.caption}
+            onChange={(e) => onChange({ caption: e.target.value })}
+            placeholder="Caption" data-testid={`input-caption-${block.id}`} />
+          {/* NEW: position selector */}
+          <Select
+            value={block.position ?? "inline"}
+            onValueChange={(v) => onChange({ position: v as ImagePosition })}
+          >
+            <SelectTrigger className="h-8" data-testid={`select-imgpos-${block.id}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="inline">Inline (default)</SelectItem>
+              <SelectItem value="above-headline">Above headline (full width)</SelectItem>
+              <SelectItem value="float-right">Float right (~40%)</SelectItem>
+              <SelectItem value="float-left">Float left (~40%)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
+
       {block.type === "pullquote" && (
         <div className="space-y-2">
           <Textarea value={block.text} onChange={(e) => onChange({ text: e.target.value })} rows={2} data-testid={`input-quote-${block.id}`} />

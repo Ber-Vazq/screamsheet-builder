@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import React, { forwardRef } from "react";
 import type { Branding, SheetSettings, Block, TwoColumnSlot } from "@shared/schema";
 
 type Props = {
@@ -75,7 +75,13 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
           {block.text || "\u00a0"}
         </p>
       );
-    case "image":
+    case "image": {
+      const pos = block.position ?? "inline";
+      const style: React.CSSProperties =
+        pos === "above-headline" ? { columnSpan: "all", width: "100%", marginBottom: 12 } :
+        pos === "float-right"    ? { float: "right", width: "40%", margin: "0 0 8px 12px", clear: "right" } :
+        pos === "float-left"     ? { float: "left",  width: "40%", margin: "0 12px 8px 0", clear: "left" } :
+        {};
       return (
         <figure className="ss-figure">
           {block.src ? (
@@ -88,6 +94,7 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
           {block.caption && <figcaption className="ss-caption">{block.caption}</figcaption>}
         </figure>
       );
+    }
     case "pullquote":
       return (
         <blockquote className="ss-pullquote">

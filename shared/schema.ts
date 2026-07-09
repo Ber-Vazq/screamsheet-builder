@@ -43,11 +43,17 @@ export type TwoColumnSlot =
   | { kind: "image"; src: string; caption: string }
   | { kind: "text"; content: string };
 
+export type ImagePosition =
+  | "inline"
+  | "above-headline"
+  | "float-right"
+  | "float-left";
+
 export type Block =
   | { id: string; type: "headline"; text: string; size: "lead" | "section" }
   | { id: string; type: "byline"; author: string; dateline: string }
   | { id: string; type: "paragraph"; text: string }
-  | { id: string; type: "image"; src: string; caption: string }
+  | { id: string; type: "image"; src: string; caption: string; position?: ImagePosition; colSpan?: 1 | 2;}
   | { id: string; type: "pullquote"; text: string; attribution: string }
   | { id: string; type: "ad"; text: string; sponsor: string; bgColor?: string; bgImage?: string; }
   | { id: string; type: "sidebar"; heading: string; text: string }
