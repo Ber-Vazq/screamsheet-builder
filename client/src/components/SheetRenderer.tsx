@@ -83,7 +83,7 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
         pos === "float-left"     ? { float: "left",  width: "40%", margin: "0 12px 8px 0", clear: "left" } :
         {};
       return (
-        <figure className="ss-figure">
+        <figure className="ss-figure" style={style}>
           {block.src ? (
             <img src={block.src} alt={block.caption} crossOrigin="anonymous" />
           ) : (
@@ -133,7 +133,7 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
       return <hr className="ss-divider" />;
     case "two-column":
       return (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, columnSpan: "all", breakInside: "avoid" }}>
           <TwoColSlot slot={block.left} />
           <TwoColSlot slot={block.right} />
         </div>
@@ -219,7 +219,7 @@ const SheetRenderer = forwardRef<HTMLDivElement, Props>(({ branding, settings, b
       <div className="ss-body" style={{
         columnCount: settings.columns ?? 1,
         columnGap: 24,
-        columnFill: "auto",
+        columnFill: "balance",
       }}>
         {blocks.length === 0 ? (
           <p className="ss-para" style={{ textAlign: "center", color: "#999" }}>
