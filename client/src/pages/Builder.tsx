@@ -30,6 +30,7 @@ const BLOCK_TYPES: { type: Block["type"]; label: string; icon: any }[] = [
   { type: "sidebar", label: "Sidebar", icon: PanelLeft },
   { type: "brief", label: "Brief", icon: FileWarning },
   { type: "divider", label: "Divider", icon: PanelLeft },
+  { type: "two-column", label: "Two columns", icon: PanelLeft },
 ];
 
 export default function Builder() {
@@ -432,7 +433,7 @@ function BlockEditor({
 }) {
   const labelMap: Record<Block["type"], string> = {
     headline: "Headline", byline: "Byline", paragraph: "Paragraph", image: "Image",
-    pullquote: "Pull quote", ad: "Ad", sidebar: "Sidebar", brief: "Brief", divider: "Divider",
+    pullquote: "Pull quote", ad: "Ad", sidebar: "Sidebar", brief: "Brief", divider: "Divider", "two-column": "Two Columns",
   };
   return (
     <div className="border border-card-border bg-card p-3 hud-panel" data-testid={`block-${block.type}-${block.id}`}>
@@ -510,7 +511,6 @@ function BlockEditor({
               />
             </div>
           </div>
-
         </div>
       )}
       {(block.type === "sidebar" || block.type === "brief") && (
@@ -522,6 +522,68 @@ function BlockEditor({
       {block.type === "divider" && (
         <div className="text-xs text-muted-foreground italic">Horizontal rule.</div>
       )}
+      {block.type === "two-column" && (
+        <div className="grid grid-cols-2 gap-3">
+          {(["left", "right"] as const).map((side) => {
+            const slot = block[side];
+            return (
+              <div key={side} className="space-y-2 border border-border p-2">
+                <Label className="text-xs text-muted-foreground capitalize">{side} column</Label>
+                <Select
+                  value={slot.kind}
+                  onValueChange={(v: "text" | "image") =>
+                    onChange({
+                      [side]: v === "image"
+                        ? { kind: "image", src: "", caption: "" }
+                        : { kind: "text", content: "" },
+                    } as Partial<Block>)
+                  }
+                >
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">Text</SelectItem>
+                    <SelectItem value="image">Image</SelectItem>
+                  </SelectContent>
+                </Select>
+                {slot.kind === "text" && (
+                  <Textarea
+                    value={slot.content}
+                    rows={3}
+                    onChange={(e) =>
+                      onChange({ [side]: { ...slot, content: e.target.value } } as Partial<Block>)
+                    }
+                  />
+                )}
+                {slot.kind === "image" && (
+                  <div className="space-y-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () =>
+                          onChange({ [side]: { ...slot, src: reader.result as string } } as Partial<Block>);
+                        reader.readAsDataURL(file);
+                      }}
+                      className="text-xs"
+                    />
+                    <Input
+                      value={slot.caption}
+                      placeholder="Caption"
+                      onChange={(e) =>
+                        onChange({ [side]: { ...slot, caption: e.target.value } } as Partial<Block>)
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import type { Branding, SheetSettings, Block } from "@shared/schema";
+import type { Branding, SheetSettings, Block, TwoColumnSlot } from "@shared/schema";
 
 type Props = {
   branding: Branding;
@@ -124,6 +124,13 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
       );
     case "divider":
       return <hr className="ss-divider" />;
+    case "two-column":
+      return (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <TwoColSlot slot={block.left} />
+          <TwoColSlot slot={block.right} />
+        </div>
+      );
   }
 }
 
@@ -216,4 +223,25 @@ const SheetRenderer = forwardRef<HTMLDivElement, Props>(({ branding, settings, b
 });
 
 SheetRenderer.displayName = "SheetRenderer";
+
+// ------------------------- Two Column function --------------------------------
+function TwoColSlot({ slot }: { slot: TwoColumnSlot }) {
+  if (slot.kind === "image") {
+    return (
+      <figure style={{ margin: 0 }}>
+        {slot.src ? (
+          <img src={slot.src} alt={slot.caption} crossOrigin="anonymous"
+            style={{
+              width: "100%", height: "auto", display: "block"}} />
+        ) : (
+            <div style={{ width: "100%", height: 160, border: "3px dashed #111", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Share Tech Mono',monospace", color: "#888" }}>
+              [ NO IMAGE ]
+            </div>
+        )}
+        {slot.caption && <figcaption className="ss-caption">{slot.caption}</figcaption>}
+      </figure>
+    );
+    }
+  return <p className="ss-para" style={{ margin: 0 }}>{slot.content || "\u00a0"}</p>;
+}
 export default SheetRenderer;

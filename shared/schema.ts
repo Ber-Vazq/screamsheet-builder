@@ -38,6 +38,10 @@ export type SheetSettings = {
   ticker: string; // optional scrolling breaking-news line
 };
 
+export type TwoColumnSlot =
+  | { kind: "image"; src: string; caption: string }
+  | { kind: "text"; content: string };
+
 export type Block =
   | { id: string; type: "headline"; text: string; size: "lead" | "section" }
   | { id: string; type: "byline"; author: string; dateline: string }
@@ -47,7 +51,8 @@ export type Block =
   | { id: string; type: "ad"; text: string; sponsor: string; bgColor?: string; bgImage?: string; }
   | { id: string; type: "sidebar"; heading: string; text: string }
   | { id: string; type: "brief"; heading: string; text: string }
-  | { id: string; type: "divider" };
+  | { id: string; type: "divider" }
+  | { id: string; type: "two-column"; left: TwoColumnSlot; right: TwoColumnSlot };
 
 export const blockSchema: z.ZodType<Block> = z.any();
 export const brandingSchema: z.ZodType<Branding> = z.any();
