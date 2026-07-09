@@ -104,17 +104,21 @@ function BlockView({ block, idx }: { block: Block; idx: number }) {
       );
     case "ad":
       return (
-        <div className="ss-ad"
-          style={{
-            backgroundColor: block.bgColor ?? undefined,
-            backgroundImage: block.bgImage ? `url(${block.bgImage})` : undefined,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}>
-          <div className="ss-ad-body">{block.text}</div>
-          {block.sponsor && <div className="ss-ad-sponsor">{block.sponsor}</div>}
+        <div style={{ columnSpan: "all" }}>
+          <div
+            className="ss-ad"
+            style={{
+              backgroundColor: block.bgColor ?? undefined,
+              backgroundImage: block.bgImage ? `url(${block.bgImage})` : undefined,
+              backgroundSize: "cover", backgroundPosition: "center",
+            }}
+          >
+            <div className="ss-ad-body">{block.text}</div>
+            {block.sponsor && <div className="ss-ad-sponsor">{block.sponsor}</div>}
+          </div>
         </div>
-      );
+        );
+
     case "sidebar":
       return (
         <aside className="ss-sidebar">

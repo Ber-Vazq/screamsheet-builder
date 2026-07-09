@@ -429,8 +429,10 @@
     display: flex; align-items: center; gap: 18px;
     padding: 14px 18px; border-bottom: 4px solid #111;
   }
-  .ss-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; flex: 1; }
+  .ss-nav { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; align-items: center;}
   .ss-tab {
+    flex: 1 1 auto;
+    min-width: 80px;
     /* angled cyberpunk button */
     clip-path: polygon(6% 0, 100% 0, 94% 100%, 0% 100%);
     text-align: center; padding: 9px 4px; font-weight: 700;
@@ -440,6 +442,22 @@
 
   /* Body grid */
   .ss-body { padding: 20px 26px 40px; }
+  .ss-headline-lead,
+  .ss-headline-section {
+      break-inside: avoid;
+      break-before: avoid;
+      overflow-wrap: break-word;
+      word-break: break-word;
+  }
+  .ss-byline,
+  .ss-pullquote,
+  .ss-sidebar,
+  .ss-brief,
+  .ss-ad,
+  .ss-figure,
+  .ss-divider {
+    break-inside: avoid;
+  }
   .ss-headline-lead {
     font-family: 'Oswald', sans-serif; font-weight: 700;
     font-size: 52px; line-height: 0.98; text-transform: uppercase;
