@@ -112,7 +112,7 @@ function SiteFooter() {
         </p>
         <p>
           This tool is free to use and will remain free for the community. If
-          you&rsquo;d like to help cover domain, hosting, and llm costs, you can
+          you&rsquo;d like to help cover domain, hosting or just want to
           support the project with an optional tip/contribution on{" "}
           <a
             href="https://ko-fi.com/stb3rn4rd"
@@ -130,6 +130,7 @@ function SiteFooter() {
           All trademarks, product names, and setting elements are the property
           of their respective owners.
         </p>
+        <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'E7S322AW4K');kofiwidget2.draw();</script>
       </div>
     </footer>
   );
