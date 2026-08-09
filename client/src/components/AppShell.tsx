@@ -130,8 +130,7 @@ function SiteFooter() {
           All trademarks, product names, and setting elements are the property
           of their respective owners.
         </p>
-        <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'E7S322AW4K');kofiwidget2.draw();</script>
-      </div>
+        <a href='https://ko-fi.com/E7S322AW4K' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi4.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>      </div>
     </footer>
   );
 }
