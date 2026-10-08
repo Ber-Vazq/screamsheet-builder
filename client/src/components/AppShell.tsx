@@ -130,6 +130,7 @@ function SiteFooter() {
           All trademarks, product names, and setting elements are the property
           of their respective owners.
         </p>
+      </div>
     </footer>
   );
 }
