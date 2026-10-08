@@ -7,7 +7,17 @@ export type TemplateDef = {
   description: string;
   branding: Branding;
   settings: SheetSettings;
+  /** Reference preview image served from client/public (stable, unhashed URL). */
+  previewSrc?: string;
 };
+
+/**
+ * Public path for a template's reference JPG. Files live in
+ * client/public/assets/templates/<id>.jpg and are copied to the build output
+ * unchanged, so the URL is stable in dev and prod. Relative (no leading "/")
+ * because vite.config uses base: "./" and the app uses hash routing.
+ */
+export const templatePreviewSrc = (id: string) => `assets/templates/${id}.jpg`;
 
 const NCT_CATEGORIES = [
   "GOSSIP", "OPINION", "WEATHER", "TECH",
@@ -35,6 +45,7 @@ function nct(id: string, active: string): TemplateDef {
       ticker: "",
       columns: 1,
     },
+    previewSrc: templatePreviewSrc(id),
   };
 }
 
@@ -49,6 +60,7 @@ export const TEMPLATES: TemplateDef[] = [
   nct("nct-world", "WORLD"),
   {
     id: "augmented-optic",
+    previewSrc: templatePreviewSrc("augmented-optic"),
     name: "The Augmented Optic",
     description: "Underground tabloid — all-seeing eye, conspiracy energy.",
     branding: {

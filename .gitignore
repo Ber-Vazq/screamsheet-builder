@@ -6,3 +6,7 @@ data.db-*
 .env
 .vercel
 .zed/settings.json
+
+# macOS metadata
+.DS_Store
+**/.DS_Store
