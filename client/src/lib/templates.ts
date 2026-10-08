@@ -130,7 +130,7 @@ export function newBlock(type: Block["type"]): Block {
     case "paragraph": return { id, type, text: "Type the story here..." };
     case "image": return { id, type, src: "", caption: "Photo caption" };
     case "pullquote": return { id, type, text: "A memorable quote.", attribution: "— Source" };
-    case "ad": return { id, type, text: "RIPPERDOC SPECIAL — 20% OFF CHROME", sponsor: "Paid for by Viktor's Clinic" };
+    case "ad": return { id, type, text: "RIPPERDOC SPECIAL — 20% OFF CHROME", sponsor: "Paid for by Viktor's Clinic", textColor: "#000000" };
     case "sidebar": return { id, type, heading: "SIDEBAR", text: "Supporting details and context." };
     case "brief": return { id, type, heading: "BRIEF", text: "Short news brief." };
     case "divider": return { id, type };
