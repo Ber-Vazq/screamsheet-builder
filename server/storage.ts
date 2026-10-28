@@ -1,6 +1,7 @@
 import { screamsheets } from '@shared/schema';
 import type { Screamsheet, InsertScreamsheet } from '@shared/schema';
 import type { StoredRecord } from '@shared/artifactCodec';
+import type { WriteMetadata } from '@shared/writeMetadata';
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
@@ -32,6 +33,8 @@ try {
 for (const ddl of [
   `ALTER TABLE screamsheets ADD COLUMN artifact_type TEXT;`,
   `ALTER TABLE screamsheets ADD COLUMN schema_version INTEGER;`,
+  // Phase 5: set on every update (epoch ms). NULL = never edited since this column existed.
+  `ALTER TABLE screamsheets ADD COLUMN updated_at INTEGER;`,
 ]) {
   try {
     sqlite.exec(ddl);
@@ -43,7 +46,7 @@ for (const ddl of [
 export const db = drizzle(sqlite);
 
 export interface IStorage {
-  createScreamsheet(data: InsertScreamsheet): Promise<Screamsheet>;
+  createScreamsheet(data: InsertScreamsheet, meta?: WriteMetadata): Promise<Screamsheet>;
   /** Raw row (snake_case, JSON as text) — decode with deserializeStoredRecord. */
   getScreamsheet(id: string): Promise<StoredRecord | undefined>;
   /** Raw rows, newest first — decode with deserializeMany. */
@@ -52,12 +55,13 @@ export interface IStorage {
     id: string,
     ownerKey: string,
     data: InsertScreamsheet,
+    meta?: WriteMetadata,
   ): Promise<Screamsheet | "notfound" | "forbidden">;
   deleteScreamsheet(id: string, ownerKey: string): Promise<"ok" | "notfound" | "forbidden">;
 }
 
 export class DatabaseStorage implements IStorage {
-  async createScreamsheet(data: InsertScreamsheet): Promise<Screamsheet> {
+  async createScreamsheet(data: InsertScreamsheet, meta: WriteMetadata = null): Promise<Screamsheet> {
     const key = data.ownerKey?.trim();
     const row = {
       id: nanoid(10),
@@ -68,6 +72,7 @@ export class DatabaseStorage implements IStorage {
       blocks: data.blocks,
       ownerKey: key ? key : null,
       createdAt: Date.now(),
+      ...(meta ? { artifactType: meta.artifactType, schemaVersion: meta.schemaVersion } : {}),
     };
     return db.insert(screamsheets).values(row).returning().get();
   }
@@ -92,6 +97,7 @@ export class DatabaseStorage implements IStorage {
     id: string,
     ownerKey: string,
     data: InsertScreamsheet,
+    meta: WriteMetadata = null,
   ): Promise<Screamsheet | "notfound" | "forbidden"> {
     const key = ownerKey.trim();
     if (!key) return "forbidden";
@@ -106,6 +112,9 @@ export class DatabaseStorage implements IStorage {
         branding: data.branding,
         settings: data.settings,
         blocks: data.blocks,
+        updatedAt: Date.now(),
+        // Only ever upgrade; a legacy payload leaves existing metadata alone.
+        ...(meta ? { artifactType: meta.artifactType, schemaVersion: meta.schemaVersion } : {}),
       })
       .where(eq(screamsheets.id, id))
       .returning()

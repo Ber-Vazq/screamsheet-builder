@@ -9,6 +9,20 @@ import {
   logDecodeFailure,
   type StoredRecord,
 } from "@shared/artifactCodec";
+import { parseWriteMetadata, WriteMetadataError, type WriteMetadata } from "@shared/writeMetadata";
+
+/** Phase 5: same metadata rules as the Vercel API. Returns undefined after sending a 400. */
+function readMeta(body: unknown, res: any): WriteMetadata | undefined {
+  try {
+    return parseWriteMetadata(body);
+  } catch (err) {
+    if (err instanceof WriteMetadataError) {
+      res.status(400).json({ error: err.message });
+      return undefined;
+    }
+    throw err;
+  }
+}
 
 // Phase 4: same contract as api/_artifacts.ts. Artifacts never include ownerKey.
 function decodeWritten(row: StoredRecord, context: string) {
@@ -31,7 +45,9 @@ export async function registerRoutes(
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
-    const sheet = await storage.createScreamsheet(parsed.data);
+    const meta = readMeta(req.body, res);
+    if (meta === undefined) return;
+    const sheet = await storage.createScreamsheet(parsed.data, meta);
     res.json(decodeWritten(sheet as StoredRecord, "POST /api/screamsheets"));
   });
 
@@ -64,7 +80,9 @@ export async function registerRoutes(
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
-    const result = await storage.updateScreamsheet(req.params.id, owner, parsed.data);
+    const meta = readMeta(req.body, res);
+    if (meta === undefined) return;
+    const result = await storage.updateScreamsheet(req.params.id, owner, parsed.data, meta);
     if (result === "notfound") return res.status(404).json({ error: "Not found" });
     if (result === "forbidden")
       return res.status(403).json({ error: "This screamsheet belongs to a different GM key." });
