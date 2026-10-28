@@ -38,7 +38,7 @@ export default function Home() {
   };
 
   // Only fetch the library when a key is present, and scope it by ?owner=.
-  const { data: sheets, isLoading } = useQuery<SheetArtifact[]>({
+  const { data: sheets, isLoading, isError, error, refetch } = useQuery<SheetArtifact[]>({
     queryKey: ["/api/screamsheets", { owner: gmKey }],
     enabled: hasKey,
     queryFn: async () => {
@@ -120,6 +120,13 @@ export default function Home() {
         ) : isLoading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-24 rounded-md" />)}
+          </div>
+        ) : isError ? (
+          // A failed request is NOT the same as an empty library — say so.
+          <div className="border border-destructive/60 p-6 hud-panel bg-card/40" data-testid="library-error">
+            <p className="text-sm font-semibold text-destructive">Couldn't load your library.</p>
+            <p className="text-xs text-muted-foreground mt-1 break-all">{(error instanceof Error ? error.message : String(error)).slice(0, 300)}</p>
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => refetch()} data-testid="button-retry-library">Retry</Button>
           </div>
         ) : !sheets || sheets.length === 0 ? (
           <div className="border border-dashed border-border p-8 text-center hud-panel bg-card/40">
