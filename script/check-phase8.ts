@@ -73,7 +73,7 @@ assert.throws(() => deserializeStoredRecord({ ...row, blocks: "{}" }), ArtifactD
 
 // --- write metadata ---
 assert.deepEqual(parseWriteMetadata({ artifactType: "textThread", schemaVersion: 1 }), { artifactType: "textThread", schemaVersion: 1 });
-assert.throws(() => parseWriteMetadata({ artifactType: "emailThread", schemaVersion: 1 }), "email waits for Phase 9");
+assert.deepEqual(parseWriteMetadata({ artifactType: "emailThread", schemaVersion: 1 }), { artifactType: "emailThread", schemaVersion: 1 }, "email writable since Phase 9");
 assert.equal(writeType(null), "sheet");
 assert.equal(chooseWriteTarget("update", 0, false, "textThread"), "v1", "threads always v1");
 assert.equal(chooseWriteTarget("update", 0, false, "sheet"), "legacy", "sheets keep Release A behavior");

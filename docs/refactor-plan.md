@@ -18,8 +18,8 @@ Never rewrite existing GM rows in place. Old rows load as-is and are normalized 
 | 6 | Reliability / UX: save status, autosave, drafts, mobile tabs | Medium | **Done** — PR #13 (see `docs/phase-6-walkthrough.md`) |
 | 7 | Public view hardening + editor polish (drag-and-drop, print preview) | Medium | **Done** — PR #15 (see `docs/phase-7-walkthrough.md`) |
 | 8 | Text thread MVP | Medium | **Done** — PR #16 (see `docs/phase-8-walkthrough.md`) |
-| 9 | Email thread MVP | Medium | Next |
-| 10 | Gallery, SEO, attribution, Etsy monetization | Medium | Pending |
+| 9 | Email thread MVP | Medium | **Done** — PR #17 (see `docs/phase-9-walkthrough.md`) |
+| 10 | Gallery, SEO, attribution, Etsy monetization | Medium | Next |
 
 ## Remaining Phases (revised Oct 28 2026)
 

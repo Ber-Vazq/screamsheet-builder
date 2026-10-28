@@ -12,17 +12,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, ExternalLink, Plus, KeyRound, LogOut, ShieldCheck, Pencil, CopyPlus } from "lucide-react";
 
-type LibraryFilter = "all" | "sheet" | "textThread";
+type LibraryFilter = "all" | "sheet" | "textThread" | "emailThread";
 const FILTERS: { id: LibraryFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "sheet", label: "Sheets" },
   { id: "textThread", label: "Texts" },
+  { id: "emailThread", label: "Emails" },
 ];
 const TYPE_BADGE: Record<Artifact["type"], string> = { sheet: "Sheet", textThread: "Text", emailThread: "Email" };
 
 /** Where Edit / Duplicate go for each artifact type. */
 function builderPath(a: Artifact): string {
-  return a.type === "textThread" ? `/build/text/${a.template}` : `/build/${a.template}`;
+  if (a.type === "textThread") return `/build/text/${a.template}`;
+  if (a.type === "emailThread") return `/build/email/${a.template}`;
+  return `/build/${a.template}`;
 }
 function cardSubtitle(a: Artifact): string {
   if (a.type === "sheet") return a.branding.outlet;

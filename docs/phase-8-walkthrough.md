@@ -31,7 +31,7 @@ No database changes. Text threads use the same `screamsheets` table and columns 
 - Ownership is checked first (wrong GM key is still 403).
 - Thread bodies are checked on the server: known style, 1-8 people with ids, at most 300 messages with ids. Bad bodies get 400 and nothing is written.
 - Reading is lenient: an odd field gets a default instead of breaking the whole thread. Only broken JSON makes a thread unreadable (same as sheets).
-- `emailThread` is still refused on write until Phase 9.
+- `emailThread` was still refused on write in Phase 8 (allowed since Phase 9).
 
 ## Where it lives
 - `shared/threadCodec.ts`: read/write helpers + server validation (also has the Phase 9 email helpers).
