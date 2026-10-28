@@ -85,4 +85,15 @@ export const insertScreamsheetSchema = z.object({
 });
 
 export type InsertScreamsheet = z.infer<typeof insertScreamsheetSchema>;
+
+// Phase 8: text/email threads reuse the same columns with looser shapes;
+// shared/threadCodec.ts validateThreadPayload does the type-specific checks.
+export const insertThreadSchema = z.object({
+  title: z.string().min(1),
+  template: z.string().min(1),
+  branding: z.record(z.unknown()),
+  settings: z.record(z.unknown()),
+  blocks: z.array(z.record(z.unknown())),
+  ownerKey: z.string().trim().optional(),
+});
 export type Screamsheet = typeof screamsheets.$inferSelect;

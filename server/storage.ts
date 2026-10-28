@@ -1,7 +1,7 @@
 import { screamsheets } from '@shared/schema';
 import type { Screamsheet, InsertScreamsheet } from '@shared/schema';
 import type { StoredRecord } from '@shared/artifactCodec';
-import type { WriteMetadata } from '@shared/writeMetadata';
+import { typeChangeError, type WriteMetadata } from '@shared/writeMetadata';
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
@@ -56,7 +56,7 @@ export interface IStorage {
     ownerKey: string,
     data: InsertScreamsheet,
     meta?: WriteMetadata,
-  ): Promise<Screamsheet | "notfound" | "forbidden">;
+  ): Promise<Screamsheet | "notfound" | "forbidden" | { conflict: string }>;
   deleteScreamsheet(id: string, ownerKey: string): Promise<"ok" | "notfound" | "forbidden">;
 }
 
@@ -98,12 +98,15 @@ export class DatabaseStorage implements IStorage {
     ownerKey: string,
     data: InsertScreamsheet,
     meta: WriteMetadata = null,
-  ): Promise<Screamsheet | "notfound" | "forbidden"> {
+  ): Promise<Screamsheet | "notfound" | "forbidden" | { conflict: string }> {
     const key = ownerKey.trim();
     if (!key) return "forbidden";
     const existing = db.select().from(screamsheets).where(eq(screamsheets.id, id)).get();
     if (!existing) return "notfound";
     if (existing.ownerKey !== key) return "forbidden";
+    // Phase 8: a row never changes type (sheet <-> text thread).
+    const conflict = typeChangeError(existing.artifactType, meta);
+    if (conflict) return { conflict };
     return db
       .update(screamsheets)
       .set({

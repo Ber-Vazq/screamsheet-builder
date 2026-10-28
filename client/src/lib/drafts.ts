@@ -2,7 +2,7 @@
 // A draft is written to localStorage while there are unsaved edits and is
 // cleared after a successful save. Every storage call is guarded: storage can
 // be blocked (sandboxed iframes) or full (base64 images are big).
-import type { SheetArtifact } from "../../../shared/artifact";
+import type { Artifact, SheetArtifact } from "../../../shared/artifact";
 import type { Block, Branding } from "../../../shared/schema";
 
 const PREFIX = "screamsheet:draft:";
@@ -16,7 +16,8 @@ export interface Draft {
   hash: string;
   /** True when images were removed to fit in storage. */
   imagesStripped: boolean;
-  sheet: SheetArtifact;
+  /** The artifact (named `sheet` for compatibility with Phase 6 drafts; may be a text thread). */
+  sheet: Artifact;
 }
 
 /** draft:<id> when editing a saved sheet, draft:copy:<id> for ?load=, draft:new:<template> otherwise. */
@@ -28,8 +29,22 @@ export function draftKey(opts: { editId: string | null; loadId: string | null; t
 
 const isData = (s: unknown) => typeof s === "string" && s.startsWith("data:");
 
-/** Replace embedded base64 images with empty strings. Returns [sheet, didStrip]. */
-export function stripImages(sheet: SheetArtifact): [SheetArtifact, boolean] {
+/** Replace embedded base64 images with empty strings. Returns [artifact, didStrip]. */
+export function stripImages<A extends Artifact>(a: A): [A, boolean] {
+  if (a.type === "sheet") return stripSheetImages(a) as [A, boolean];
+  if (a.type === "textThread") {
+    let stripped = false;
+    const messages = a.messages.map((m) => {
+      if (!isData(m.imageSrc)) return m;
+      stripped = true;
+      return { ...m, imageSrc: "" };
+    });
+    return [{ ...a, messages } as A, stripped];
+  }
+  return [a, false]; // email threads have no embedded images
+}
+
+function stripSheetImages(sheet: SheetArtifact): [SheetArtifact, boolean] {
   let stripped = false;
   const clean = (s: unknown) => {
     if (isData(s)) { stripped = true; return ""; }
@@ -52,7 +67,7 @@ export function stripImages(sheet: SheetArtifact): [SheetArtifact, boolean] {
 }
 
 /** Serialize a draft, stripping images if it is too large. null = cannot fit even without images. */
-export function encodeDraft(sheet: SheetArtifact, hash: string, now = Date.now()): string | null {
+export function encodeDraft(sheet: Artifact, hash: string, now = Date.now()): string | null {
   const full = JSON.stringify({ v: 1, savedAt: now, hash, imagesStripped: false, sheet } satisfies Draft);
   if (full.length <= MAX_DRAFT_CHARS) return full;
   const [lean, didStrip] = stripImages(sheet);
@@ -64,8 +79,16 @@ export function decodeDraft(raw: string | null): Draft | null {
   if (!raw) return null;
   try {
     const d = JSON.parse(raw);
-    if (d?.v !== 1 || typeof d.savedAt !== "number" || typeof d.hash !== "string" || d.sheet?.type !== "sheet") return null;
-    if (!Array.isArray(d.sheet.blocks) || !d.sheet.branding || !d.sheet.settings) return null;
+    if (d?.v !== 1 || typeof d.savedAt !== "number" || typeof d.hash !== "string") return null;
+    const a = d.sheet;
+    if (a?.type === "sheet") {
+      if (!Array.isArray(a.blocks) || !a.branding || !a.settings) return null;
+    } else if (a?.type === "textThread" || a?.type === "emailThread") {
+      if (!Array.isArray(a.messages)) return null;
+      if (a.type === "textThread" && !Array.isArray(a.participants)) return null;
+    } else {
+      return null;
+    }
     return d as Draft;
   } catch {
     return null;
@@ -82,7 +105,7 @@ function storage(): Storage | null {
   }
 }
 
-export function writeDraft(key: string, sheet: SheetArtifact, hash: string): DraftWriteResult {
+export function writeDraft(key: string, sheet: Artifact, hash: string): DraftWriteResult {
   const ls = storage();
   if (!ls) return "unavailable";
   const encoded = encodeDraft(sheet, hash);

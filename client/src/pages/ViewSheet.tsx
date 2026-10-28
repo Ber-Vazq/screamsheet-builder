@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import type { Artifact, SheetArtifact } from "@shared/artifact";
+import type { Artifact, SheetArtifact, TextThreadArtifact } from "@shared/artifact";
 import SheetRenderer from "@/components/SheetRenderer";
+import TextThreadRenderer, { PHONE_WIDTH } from "@/components/text/TextThreadRenderer";
 import { exportPng, exportPdf } from "@/lib/exportSheet";
 import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/AppShell";
@@ -13,9 +14,13 @@ import { ConfirmFlash, useConfirmFlash } from "@/components/ConfirmFlash";
 
 const SHEET_WIDTH = 816;
 
+/** Artifact types this viewer can show. Email threads arrive in Phase 9. */
+type Viewable = SheetArtifact | TextThreadArtifact;
+const isViewable = (a: Artifact): a is Viewable => a.type === "sheet" || a.type === "textThread";
+
 type ViewState =
   | { kind: "loading" }
-  | { kind: "ready"; sheet: SheetArtifact }
+  | { kind: "ready"; artifact: Viewable }
   | { kind: "error"; reason: LoadErrorKind | "unsupported" };
 
 export default function ViewSheet() {
@@ -41,21 +46,24 @@ export default function ViewSheet() {
     ? { kind: "loading" }
     : error
       ? { kind: "error", reason: classifyLoadError(error) }
-      : data && data.type === "sheet"
-        ? { kind: "ready", sheet: data }
+      : data && isViewable(data)
+        ? { kind: "ready", artifact: data }
         : { kind: "error", reason: data ? "unsupported" : "notfound" };
-  const sheet = view.kind === "ready" ? view.sheet : null;
+  const artifact = view.kind === "ready" ? view.artifact : null;
+  const sheet = artifact?.type === "sheet" ? artifact : null;
+  const thread = artifact?.type === "textThread" ? artifact : null;
 
   useEffect(() => {
     if (sheet) document.title = `${sheet.branding.outlet || "Screamsheet"} // Screamsheet`;
-  }, [sheet]);
+    else if (thread) document.title = `${thread.headerTitle || "Messages"} // Screamsheet`;
+  }, [sheet, thread]);
 
   const doExport = async (kind: "png" | "pdf") => {
-    if (!ref.current || !sheet) return;
+    if (!ref.current || !artifact) return;
     setExporting(true);
     try {
-      if (kind === "png") await exportPng(ref.current, sheet.title);
-      else await exportPdf(ref.current, sheet.title);
+      if (kind === "png") await exportPng(ref.current, artifact.title);
+      else await exportPdf(ref.current, artifact.title);
       show(kind === "png" ? "PNG exported" : "PDF exported", "Check your downloads");
     } finally {
       setExporting(false);
@@ -72,7 +80,7 @@ export default function ViewSheet() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
         <div className="mx-auto max-w-5xl px-3 sm:px-4 h-14 flex items-center justify-between gap-2 sm:gap-4 min-w-0">
           <div className="min-w-0 overflow-hidden"><BrandMark /></div>
-          {sheet && (
+          {artifact && (
             <div className="flex items-center gap-2 shrink-0">
               <Button size="sm" variant="outline" disabled={exporting} onClick={() => doExport("png")} data-testid="button-view-png">
                 <Download className="w-4 h-4 sm:mr-1" /> <span className="hidden sm:inline">PNG</span>
@@ -85,11 +93,17 @@ export default function ViewSheet() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-5xl px-3 sm:px-4 py-8 flex-1" data-testid="view-main" data-state={view.kind === "error" ? view.reason : view.kind}>
+      <main
+        className="relative z-10 mx-auto w-full max-w-5xl px-3 sm:px-4 py-8 flex-1"
+        data-testid="view-main"
+        data-state={view.kind === "error" ? view.reason : view.kind}
+        data-artifact-type={artifact?.type}
+      >
         {view.kind === "loading" && <LoadingState />}
         {view.kind === "error" && <ErrorState reason={view.reason} retrying={isFetching} onRetry={() => refetch()} />}
         {sheet && (
           <SheetFit
+            width={SHEET_WIDTH}
             fitRef={fitRef}
             scale={scale}
             setScale={setScale}
@@ -98,6 +112,20 @@ export default function ViewSheet() {
           >
             <div className="shadow-2xl shadow-black/60">
               <SheetRenderer ref={ref} branding={sheet.branding} settings={sheet.settings} blocks={sheet.blocks} />
+            </div>
+          </SheetFit>
+        )}
+        {thread && (
+          <SheetFit
+            width={PHONE_WIDTH}
+            fitRef={fitRef}
+            scale={scale}
+            setScale={setScale}
+            sheetHeight={sheetHeight}
+            setSheetHeight={setSheetHeight}
+          >
+            <div className="shadow-2xl shadow-black/60">
+              <TextThreadRenderer ref={ref} thread={thread} />
             </div>
           </SheetFit>
         )}
@@ -128,13 +156,13 @@ function LoadingState() {
 const ERROR_COPY: Record<LoadErrorKind | "unsupported", { code: string; title: string; body: string; retry: boolean }> = {
   notfound: {
     code: "404 // SIGNAL LOST",
-    title: "This screamsheet doesn't exist",
-    body: "The link may be mistyped, or the GM deleted this sheet. Ask them for a fresh link.",
+    title: "This link doesn't lead anywhere",
+    body: "The link may be mistyped, or the GM deleted it. Ask them for a fresh link.",
     retry: false,
   },
   unreadable: {
     code: "500 // CORRUPTED FEED",
-    title: "This screamsheet couldn't be read",
+    title: "This couldn't be read",
     body: "The server had trouble opening it. Try again in a moment. If it keeps happening, let the GM know.",
     retry: true,
   },
@@ -171,13 +199,14 @@ function ErrorState({ reason, retrying, onRetry }: { reason: LoadErrorKind | "un
   );
 }
 
-// Scales a fixed 816px sheet down to fit the container width on small screens.
+// Scales a fixed-width page (816px sheet or 390px phone) down to fit the container width on small screens.
 // Uses transform: scale (keeps the export ref at native resolution) plus a
 // height-collapsing wrapper so scaled content doesn't leave dead space.
 function SheetFit({
-  children, fitRef, scale, setScale, sheetHeight, setSheetHeight,
+  children, width, fitRef, scale, setScale, sheetHeight, setSheetHeight,
 }: {
   children: React.ReactNode;
+  width: number;
   fitRef: React.RefObject<HTMLDivElement>;
   scale: number;
   setScale: (n: number) => void;
@@ -191,7 +220,7 @@ function SheetFit({
     if (!outer) return;
     const compute = () => {
       const avail = outer.clientWidth;
-      const next = avail >= SHEET_WIDTH ? 1 : Math.max(avail / SHEET_WIDTH, 0.1);
+      const next = avail >= width ? 1 : Math.max(avail / width, 0.1);
       setScale(next);
       const inner = fitRef.current;
       if (inner) setSheetHeight(inner.offsetHeight * next);
@@ -215,8 +244,8 @@ function SheetFit({
 
   return (
     <div ref={outerRef} className="flex justify-center">
-      <div style={{ width: SHEET_WIDTH * scale, height: sheetHeight ?? undefined }}>
-        <div ref={fitRef} style={{ transform: `scale(${scale})`, transformOrigin: "top left", width: SHEET_WIDTH }}>
+      <div style={{ width: width * scale, height: sheetHeight ?? undefined }}>
+        <div ref={fitRef} style={{ transform: `scale(${scale})`, transformOrigin: "top left", width }}>
           {children}
         </div>
       </div>
