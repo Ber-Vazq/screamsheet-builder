@@ -10,7 +10,7 @@
 | Leave-page warning | The browser asks before closing or reloading with unsaved edits. |
 | Mobile | Below `lg`: Edit / Preview tabs. The preview stays mounted off-screen, so PNG/PDF export works from either tab. |
 
-Not done (optional in the plan): drag-and-drop reordering (the up/down buttons remain) and print-preview mode.
+Moved to Phase 7: drag-and-drop reordering (the up/down buttons remain for now) and print-preview mode.
 
 ## Where it lives
 - `client/src/lib/sheetSnapshot.ts`: content fingerprint (sorted-key JSON + FNV-1a) of exactly what a save persists.
