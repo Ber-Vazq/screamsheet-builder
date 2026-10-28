@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import type { Screamsheet } from "@shared/schema";
+import type { SheetArtifact } from "@shared/artifact";
 import SheetRenderer from "@/components/SheetRenderer";
 import { exportPng, exportPdf } from "@/lib/exportSheet";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export default function ViewSheet() {
   const [scale, setScale] = useState(1);
   const [sheetHeight, setSheetHeight] = useState<number | null>(null);
 
-  const { data: sheet, isLoading, isError } = useQuery<Screamsheet>({
+  const { data: sheet, isLoading, isError } = useQuery<SheetArtifact>({
     queryKey: ["/api/screamsheets", id],
   });
 

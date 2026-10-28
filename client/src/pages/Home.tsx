@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Screamsheet } from "@shared/schema";
+import type { SheetArtifact } from "@shared/artifact";
 import TemplatePicker from "@/components/builder/TemplatePicker";
 import { getGmKey, setGmKey, clearGmKey } from "@/lib/gmKey";
 import AppShell from "@/components/AppShell";
@@ -38,12 +38,12 @@ export default function Home() {
   };
 
   // Only fetch the library when a key is present, and scope it by ?owner=.
-  const { data: sheets, isLoading } = useQuery<Screamsheet[]>({
+  const { data: sheets, isLoading, isError, error, refetch } = useQuery<SheetArtifact[]>({
     queryKey: ["/api/screamsheets", { owner: gmKey }],
     enabled: hasKey,
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/screamsheets?owner=${encodeURIComponent(gmKey)}`);
-      return (await res.json()) as Screamsheet[];
+      return (await res.json()) as SheetArtifact[];
     },
   });
 
@@ -121,6 +121,13 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-24 rounded-md" />)}
           </div>
+        ) : isError ? (
+          // A failed request is NOT the same as an empty library — say so.
+          <div className="border border-destructive/60 p-6 hud-panel bg-card/40" data-testid="library-error">
+            <p className="text-sm font-semibold text-destructive">Couldn't load your library.</p>
+            <p className="text-xs text-muted-foreground mt-1 break-all">{(error instanceof Error ? error.message : String(error)).slice(0, 300)}</p>
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => refetch()} data-testid="button-retry-library">Retry</Button>
+          </div>
         ) : !sheets || sheets.length === 0 ? (
           <div className="border border-dashed border-border p-8 text-center hud-panel bg-card/40">
             <p className="text-muted-foreground text-sm">No screamsheets saved under this GM key yet. Build one and hit Save — it'll be filed under your key.</p>
@@ -135,7 +142,7 @@ export default function Home() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-semibold text-sm truncate" data-testid={`text-title-${s.id}`}>{s.title}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{s.branding.outlet} · {new Date(s.createdAt).toLocaleDateString()}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{s.branding.outlet}{s.createdAt != null ? ` · ${new Date(s.createdAt).toLocaleDateString()}` : ""}</div>
                   </div>
                   <Button
                     size="icon" variant="ghost"

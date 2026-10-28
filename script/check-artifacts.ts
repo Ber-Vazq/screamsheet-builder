@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import {
   deserializeStoredRecord, isLegacySheetRow, serializeArtifactForStorage, ArtifactDecodeError,
+  isRuntimeArtifact, deserializeMany,
 } from "../shared/artifactCodec";
 
 const branding = { outlet: "NIGHT CITY TODAY", tagline: "NEWS", accent: "#c0392b",
@@ -49,5 +50,27 @@ assert.equal(deserializeStoredRecord(row).id, "abc123");
 const v1 = serializeArtifactForStorage(a, "v1");
 assert.equal(v1.schema_version, 1);
 assert.equal(deserializeStoredRecord(v1).version, 1);
+
+// --- Phase 4 ---
+// 8. Legacy row with the NEW columns present but NULL (what Supabase returns after the migration)
+const withNullCols = deserializeStoredRecord({ ...supa, artifact_type: null, schema_version: null });
+assert.equal(withNullCols.version, 0);
+
+// 9. An already-decoded artifact passes through unchanged (client decoding an API response)
+assert.equal(isRuntimeArtifact(a as any), true);
+const again = deserializeStoredRecord(deserializeStoredRecord(v1) as any);
+assert.equal(again.version, 1);
+assert.equal(deserializeStoredRecord(a as any).gmKeyScoped, true);
+
+// 10. Library decoding skips (and logs) bad rows instead of failing the whole list
+const origErr = console.error; let logged = ""; console.error = (...x: unknown[]) => { logged += x.join(" "); };
+const { artifacts, skipped } = deserializeMany([supa, { ...supa, id: "bad", schema_version: 99 }, drizzle], "test");
+console.error = origErr;
+assert.equal(artifacts.length, 2);
+assert.equal(skipped, 1);
+assert.ok(logged.includes("[artifact-decode]") && logged.includes('"id":"bad"'), "failure must be logged with id");
+
+// 11. Mixed old/new rows in one list (legacy + v1) both decode
+assert.equal(deserializeMany([supa, { ...supa, id: "new1", artifact_type: "sheet", schema_version: 1 }], "t").artifacts.length, 2);
 
 console.log("All artifact checks passed");
