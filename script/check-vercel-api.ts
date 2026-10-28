@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 // supabase-js needs a WebSocket global on Node < 22; the stub is never used.
 (globalThis as any).WebSocket ??= class {};
 process.env.SUPABASE_URL ??= "http://localhost";
-process.env.SUPABASE_ANON_KEY ??= "stub";
+process.env.SUPABASE_SERVICE_ROLE_KEY ??= "stub";
 const { supabase } = await import("../api/_supabase.js");
 const { default: list } = await import("../api/screamsheets/index.js");
 const { default: one } = await import("../api/screamsheets/[id].js");

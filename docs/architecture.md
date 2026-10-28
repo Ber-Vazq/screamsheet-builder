@@ -69,4 +69,4 @@ There is no `updated_at`, `artifact_type`, or `schema_version` yet. A missing `s
 
 ## Security Boundary
 
-GM key is checked server-side on PUT/DELETE and used to filter the library; Supabase RLS is a second layer. The key is stripped from all public responses.
+GM key is checked server-side on PUT/DELETE and used to filter the library; The API uses the server-only service-role key; the public anon role has no access to the table (Phase 4.5, `docs/security-hotfix.md`). The key is stripped from all public responses.

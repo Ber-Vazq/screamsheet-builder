@@ -32,7 +32,7 @@ The local dev server uses SQLite (`data.db`, gitignored) so you can run without 
 ## Production deployment (Vercel + Supabase)
 
 1. Create a Supabase project and a `screamsheets` table (see `SUPABASE_VERCEL_GUIDE.md`).
-2. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` as Vercel environment variables.
+2. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (server-only) as Vercel environment variables for Production and Preview. See `docs/security-hotfix.md`.
 3. Deploy with the Vercel CLI or the Vercel GitHub integration. `vercel.json` runs `vite build` and compiles the `/api` functions.
 
 See [`SUPABASE_VERCEL_GUIDE.md`](./SUPABASE_VERCEL_GUIDE.md) for full setup steps.
