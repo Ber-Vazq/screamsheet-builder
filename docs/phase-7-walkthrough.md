@@ -31,7 +31,7 @@ No database changes. One new Vercel function (`api/share/[id].ts`) and one new r
 ```bash
 npx tsx script/check-phase7.ts      # page fit, error mapping, share meta/escaping, reorder
 npx tsx script/check-vercel-api.ts  # now also runs api/share/[id] against the stub DB
-python script/e2e-phase7.py         # 52 checks (seeded data.db + npm run dev)
+python script/e2e-phase7.py         # 51 checks (seeded data.db + npm run dev)
 ```
 
 ## After merge
