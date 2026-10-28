@@ -1,14 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { nanoid } from "nanoid";
 import { supabase, TABLE } from "../_supabase.js";
-
-// Maps a DB row to the API shape (camelCase createdAt).
-// Strips owner_key so the GM's secret key never travels back to any client.
-function toApi(row: any) {
-  if (!row) return row;
-  const { created_at, owner_key, ...rest } = row;
-  return { ...rest, createdAt: created_at };
-}
+import { decodeRows, decodeWritten } from "../_artifacts.js";
 
 function getOwner(req: VercelRequest): string {
   const raw = Array.isArray(req.query.owner) ? req.query.owner[0] : req.query.owner;
@@ -27,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq("owner_key", owner)
       .order("created_at", { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json((data ?? []).map(toApi));
+    return res.status(200).json(decodeRows(data ?? [], "GET /api/screamsheets"));
   }
 
   // POST /api/screamsheets -> save a screamsheet, returns the row with its share id
@@ -53,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json(toApi(data));
+    return res.status(200).json(decodeWritten(data, "POST /api/screamsheets"));
   }
 
   res.setHeader("Allow", "GET, POST");

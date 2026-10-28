@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Screamsheet } from "@shared/schema";
+import type { SheetArtifact } from "@shared/artifact";
 import TemplatePicker from "@/components/builder/TemplatePicker";
 import { getGmKey, setGmKey, clearGmKey } from "@/lib/gmKey";
 import AppShell from "@/components/AppShell";
@@ -38,12 +38,12 @@ export default function Home() {
   };
 
   // Only fetch the library when a key is present, and scope it by ?owner=.
-  const { data: sheets, isLoading } = useQuery<Screamsheet[]>({
+  const { data: sheets, isLoading } = useQuery<SheetArtifact[]>({
     queryKey: ["/api/screamsheets", { owner: gmKey }],
     enabled: hasKey,
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/screamsheets?owner=${encodeURIComponent(gmKey)}`);
-      return (await res.json()) as Screamsheet[];
+      return (await res.json()) as SheetArtifact[];
     },
   });
 
@@ -135,7 +135,7 @@ export default function Home() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-semibold text-sm truncate" data-testid={`text-title-${s.id}`}>{s.title}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{s.branding.outlet} · {new Date(s.createdAt).toLocaleDateString()}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{s.branding.outlet}{s.createdAt != null ? ` · ${new Date(s.createdAt).toLocaleDateString()}` : ""}</div>
                   </div>
                   <Button
                     size="icon" variant="ghost"

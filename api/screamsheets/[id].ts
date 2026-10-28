@@ -1,12 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { supabase, TABLE } from "../_supabase.js";
-
-// Strips owner_key so the GM's secret key never leaks to players viewing a share link.
-function toApi(row: any) {
-  if (!row) return row;
-  const { created_at, owner_key, ...rest } = row;
-  return { ...rest, createdAt: created_at };
-}
+import { decodeRow, decodeWritten } from "../_artifacts.js";
 
 function getOwner(req: VercelRequest): string {
   const raw = Array.isArray(req.query.owner) ? req.query.owner[0] : req.query.owner;
@@ -26,7 +20,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .maybeSingle();
     if (error) return res.status(500).json({ error: error.message });
     if (!data) return res.status(404).json({ error: "Not found" });
-    return res.status(200).json(toApi(data));
+    const artifact = decodeRow(data, "GET /api/screamsheets/:id");
+    if (!artifact) return res.status(500).json({ error: "This screamsheet could not be read." });
+    return res.status(200).json(artifact);
   }
 
   // PUT /api/screamsheets/:id?owner=KEY -> update in place, only if the GM key matches.
@@ -59,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json(toApi(data));
+    return res.status(200).json(decodeWritten(data, "PUT /api/screamsheets/:id"));
   }
 
   // DELETE /api/screamsheets/:id?owner=KEY -> remove, but only if the GM key matches.

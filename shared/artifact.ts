@@ -1,4 +1,4 @@
-import type { Branding, SheetSettings, Block } from "./schema";
+import type { Branding, SheetSettings, Block } from "./schema.js";
 
 export type ArtifactType = "sheet" | "textThread" | "emailThread";
 

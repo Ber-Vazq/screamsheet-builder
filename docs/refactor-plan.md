@@ -8,11 +8,11 @@ Never rewrite existing GM rows in place. Old rows load as-is and are normalized 
 
 | Phase | Scope | Risk | Status |
 |---|---|---|---|
-| 0 | Safety: backup Supabase, sample records, inventory | Low | Partially (inventory in architecture.md; backup TODO) |
+| 0 | Safety: backup Supabase, sample records, inventory | Low | Backup is step 1 of Phase 4 SQL |
 | 1 | Repo cleanup, public assets, metadata, docs | Low | **Done** |
 | 2 | Runtime artifact types + (de)serializers, no storage change | Low | **Done** (`shared/artifact.ts`, `shared/artifactCodec.ts`, `script/check-artifacts.ts`) |
 | 3 | Decompose `Builder.tsx` around `SheetArtifact` | Medium | **Done** (see `docs/phase-3-walkthrough.md`) |
-| 4 | Nullable `artifact_type` / `schema_version` columns, read compat | Medium | Next |
+| 4 | Nullable `artifact_type` / `schema_version` columns, read compat | Medium | **Code done** — production SQL pending (see `docs/phase-4-walkthrough.md`) |
 | 5 | Conservative write rollout (Release A → B) | High | Pending |
 
 ## Fields That Must Not Break

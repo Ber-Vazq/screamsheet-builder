@@ -1,6 +1,6 @@
 // Compatibility layer: the ONLY place that knows what stored rows look like.
-import type { Artifact, SheetArtifact } from "./artifact";
-import type { Branding, SheetSettings, Block } from "./schema";
+import type { Artifact, SheetArtifact } from "./artifact.js";
+import type { Branding, SheetSettings, Block } from "./schema.js";
 
 /** A raw row from Supabase, Drizzle, or an API response. Deliberately loose. */
 export type StoredRecord = Record<string, unknown>;
@@ -75,6 +75,9 @@ export function normalizeLegacySheetToArtifact(row: StoredRecord): SheetArtifact
 
 /** Single entry point for reading any stored record. */
 export function deserializeStoredRecord(record: StoredRecord): Artifact {
+  if (isRuntimeArtifact(record)) {
+    return record as unknown as Artifact;
+  }
   if (isLegacySheetRow(record)) {
     return normalizeLegacySheetToArtifact(record);
   }
@@ -129,4 +132,59 @@ export function serializeArtifactForStorage(
     row.schema_version = 1;
   }
   return row;
+}
+
+// ---------- Phase 4: read-side helpers used by the API layers ----------
+
+const ARTIFACT_TYPES = new Set(["sheet", "textThread", "emailThread"]);
+
+/**
+ * True for an object that is ALREADY a runtime artifact (e.g. an API response
+ * the client is decoding again). These carry `version` + `shareSlug` instead
+ * of storage columns, and must pass through unchanged — re-normalizing them
+ * would reset version to 0 and gmKeyScoped to false.
+ */
+export function isRuntimeArtifact(record: StoredRecord): boolean {
+  return (
+    typeof record.type === "string" &&
+    ARTIFACT_TYPES.has(record.type) &&
+    typeof record.shareSlug === "string" &&
+    (record.version === 0 || record.version === 1)
+  );
+}
+
+/** Structured, greppable log line for anything the codec could not read. */
+export function logDecodeFailure(context: string, record: StoredRecord, err: unknown): void {
+  const id = err instanceof ArtifactDecodeError && err.recordId ? err.recordId : idOf(record);
+  console.error(
+    "[artifact-decode]",
+    JSON.stringify({
+      context,
+      id: id ?? null,
+      schemaVersion: field(record, "schema_version", "schemaVersion") ?? null,
+      artifactType: field(record, "artifact_type", "artifactType") ?? null,
+      error: err instanceof Error ? err.message : String(err),
+    }),
+  );
+}
+
+/**
+ * Decode a list (GM library). One bad row is logged and skipped instead of
+ * failing the whole request, so a single corrupt sheet can't hide the rest.
+ */
+export function deserializeMany(
+  records: StoredRecord[],
+  context: string,
+): { artifacts: Artifact[]; skipped: number } {
+  const artifacts: Artifact[] = [];
+  let skipped = 0;
+  for (const r of records) {
+    try {
+      artifacts.push(deserializeStoredRecord(r));
+    } catch (err) {
+      skipped++;
+      logDecodeFailure(context, r, err);
+    }
+  }
+  return { artifacts, skipped };
 }

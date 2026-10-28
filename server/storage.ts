@@ -1,5 +1,6 @@
 import { screamsheets } from '@shared/schema';
 import type { Screamsheet, InsertScreamsheet } from '@shared/schema';
+import type { StoredRecord } from '@shared/artifactCodec';
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
@@ -27,12 +28,26 @@ try {
   /* column already present */
 }
 
+// Phase 4: nullable artifact metadata columns (no-op if already present).
+for (const ddl of [
+  `ALTER TABLE screamsheets ADD COLUMN artifact_type TEXT;`,
+  `ALTER TABLE screamsheets ADD COLUMN schema_version INTEGER;`,
+]) {
+  try {
+    sqlite.exec(ddl);
+  } catch {
+    /* column already present */
+  }
+}
+
 export const db = drizzle(sqlite);
 
 export interface IStorage {
   createScreamsheet(data: InsertScreamsheet): Promise<Screamsheet>;
-  getScreamsheet(id: string): Promise<Screamsheet | undefined>;
-  listScreamsheets(ownerKey: string): Promise<Screamsheet[]>;
+  /** Raw row (snake_case, JSON as text) — decode with deserializeStoredRecord. */
+  getScreamsheet(id: string): Promise<StoredRecord | undefined>;
+  /** Raw rows, newest first — decode with deserializeMany. */
+  listScreamsheets(ownerKey: string): Promise<StoredRecord[]>;
   updateScreamsheet(
     id: string,
     ownerKey: string,
@@ -57,14 +72,20 @@ export class DatabaseStorage implements IStorage {
     return db.insert(screamsheets).values(row).returning().get();
   }
 
-  async getScreamsheet(id: string): Promise<Screamsheet | undefined> {
-    return db.select().from(screamsheets).where(eq(screamsheets.id, id)).get();
+  // Phase 4: reads use raw SQL on purpose. Drizzle's JSON columns call
+  // JSON.parse during select, so ONE corrupt row would crash the whole query
+  // before the artifact codec could log and skip it. Raw rows keep JSON as
+  // text and let shared/artifactCodec.ts do the parsing.
+  async getScreamsheet(id: string): Promise<StoredRecord | undefined> {
+    return sqlite.prepare(`SELECT * FROM screamsheets WHERE id = ?`).get(id) as StoredRecord | undefined;
   }
 
-  async listScreamsheets(ownerKey: string): Promise<Screamsheet[]> {
+  async listScreamsheets(ownerKey: string): Promise<StoredRecord[]> {
     const key = ownerKey.trim();
     if (!key) return [];
-    return db.select().from(screamsheets).where(eq(screamsheets.ownerKey, key)).all();
+    return sqlite
+      .prepare(`SELECT * FROM screamsheets WHERE owner_key = ? ORDER BY created_at DESC`)
+      .all(key) as StoredRecord[];
   }
 
   async updateScreamsheet(
