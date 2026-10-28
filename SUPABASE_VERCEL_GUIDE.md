@@ -252,6 +252,4 @@ vercel dev
 - `.env` and `.vercel/` are gitignored — secrets are **never** committed.
 - On Vercel, `SUPABASE_URL` / `SUPABASE_ANON_KEY` live as encrypted environment
   variables and are injected only into the serverless functions at runtime.
-- The anon key is safe to use server-side; RLS policies are what actually govern access.
-  This prototype intentionally allows public read/create/delete (share-by-slug model).
-  Tighten the RLS policies if you later add accounts.
+- **Updated (Phase 4.5):** the API now uses `SUPABASE_SERVICE_ROLE_KEY` and the `anon`/`authenticated` roles have no access to `screamsheets` (no policies, privileges revoked). The anon-key instructions above are historical. See `docs/security-hotfix.md`.

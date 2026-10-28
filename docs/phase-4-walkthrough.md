@@ -131,7 +131,7 @@ c.commit()
 
 - 398 rows, 116 with an owner key, about 135 MB (mostly embedded images; largest row ~4.4 MB).
 - Every row has `blocks` as an array and `branding` / `settings` as objects, with no empty titles, so all of them should decode as legacy v0.
-- **Security note (not changed here):** RLS policies on `screamsheets` allow anon `SELECT/UPDATE/DELETE` on all rows (`using (true)`). The GM key check lives only in the API code. Anyone who obtains the anon key could bypass it. Consider moving the API to the service-role key and tightening RLS in a later phase.
+- **Security note (not changed here):** RLS policies on `screamsheets` allow anon `SELECT/UPDATE/DELETE` on all rows (`using (true)`). The GM key check lives only in the API code. Anyone who obtains the anon key could bypass it. Consider moving the API to the service-role key and tightening RLS in a later phase. **Addressed in Phase 4.5:** see `docs/security-hotfix.md`.
 
 ## Next: Phase 5 (conservative writes)
 
