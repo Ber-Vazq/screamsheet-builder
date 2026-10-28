@@ -4,13 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { Trash2, ChevronUp, ChevronDown, GripVertical } from "lucide-react";
+import type { DragHandleProps } from "./BlockListEditor";
 
 /** Editor for ONE content block. Pure UI: all changes go out through callbacks. */
 export default function BlockEditorRow({
-  block, index, total, onChange, onRemove, onMove, onImage,
+  block, index, total, dragHandle, onChange, onRemove, onMove, onImage,
 }: {
   block: Block; index: number; total: number;
+  dragHandle?: DragHandleProps;
   onChange: (p: Partial<Block>) => void;
   onRemove: () => void;
   onMove: (d: -1 | 1) => void;
@@ -21,9 +23,24 @@ export default function BlockEditorRow({
     pullquote: "Pull quote", ad: "Ad", sidebar: "Sidebar", brief: "Brief", divider: "Divider", "two-column": "Two Columns",
   };
   return (
-    <div className="border border-card-border bg-card p-3 hud-panel" data-testid={`block-${block.type}-${block.id}`}>
+    <div className="border border-card-border bg-card p-3 hud-panel" data-testid={`block-${block.type}-${block.id}`} data-block-id={block.id}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{labelMap[block.type]}</span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          {dragHandle && (
+            <button
+              type="button"
+              ref={dragHandle.ref}
+              {...dragHandle.attributes}
+              {...dragHandle.listeners}
+              className={`h-7 w-6 -ml-1 flex items-center justify-center text-muted-foreground hover:text-primary touch-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary ${dragHandle.isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+              aria-label={`Drag to reorder ${labelMap[block.type]} block`}
+              data-testid={`drag-${block.id}`}
+            >
+              <GripVertical className="w-4 h-4" />
+            </button>
+          )}
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{labelMap[block.type]}</span>
+        </div>
         <div className="flex items-center gap-0.5">
           <Button size="icon" variant="ghost" className="h-7 w-7" disabled={index === 0} onClick={() => onMove(-1)} aria-label="Move up" data-testid={`button-up-${block.id}`}><ChevronUp className="w-4 h-4" /></Button>
           <Button size="icon" variant="ghost" className="h-7 w-7" disabled={index === total - 1} onClick={() => onMove(1)} aria-label="Move down" data-testid={`button-down-${block.id}`}><ChevronDown className="w-4 h-4" /></Button>

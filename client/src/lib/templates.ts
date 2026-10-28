@@ -164,7 +164,8 @@ export function sheetArtifactFromTemplate(tpl: TemplateDef): SheetArtifact {
     version: 0,
     template: tpl.id,
     branding: tpl.branding,
-    settings: tpl.settings,
+    // Phase 7: new sheets carry the credit line by default (toggle in the form).
+    settings: { ...tpl.settings, showAttribution: true },
     blocks: starterBlocks(),
   };
 }

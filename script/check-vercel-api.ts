@@ -8,6 +8,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY ??= "stub";
 const { supabase } = await import("../api/_supabase.js");
 const { default: list } = await import("../api/screamsheets/index.js");
 const { default: one } = await import("../api/screamsheets/[id].js");
+const { default: sharePage } = await import("../api/share/[id].js");
 
 const branding = { outlet: "NCT", tagline: "NEWS", accent: "#f00", headerBg: "#fff", headerText: "#000", logoStyle: "nct" };
 const settings = { clock: "12:00 AM", categories: ["TECH"], activeCategory: "TECH", showNav: true, ticker: "", columns: 1 };
@@ -54,9 +55,15 @@ let rows: any[] = [];
 };
 const call = async (h: any, query: any, method = "GET", body?: any) => {
   let status = 0, out: any;
-  const res: any = { status: (s: number) => { status = s; return res; }, json: (b: any) => { out = b; return res; }, setHeader() {} };
-  await h({ method, query, body }, res);
-  return { status, body: out };
+  const headers: Record<string, string> = {};
+  const res: any = {
+    status: (s: number) => { status = s; return res; },
+    json: (b: any) => { out = b; return res; },
+    send: (b: any) => { out = b; return res; },
+    setHeader(k: string, v: string) { headers[k.toLowerCase()] = v; },
+  };
+  await h({ method, query, body, headers: { host: "screamsheet.vercel.app", "x-forwarded-proto": "https" } }, res);
+  return { status, body: out, headers };
 };
 
 rows = [legacy, legacyNullCols, v1, broken];
@@ -154,4 +161,30 @@ rows = [{ ...legacy, id: "a", created_at: 10 }, { ...v1, id: "b", created_at: 30
 const mixed = await call(list, { owner: "gm" });
 assert.deepEqual(mixed.body.map((x: any) => [x.id, x.version]), [["b", 1], ["c", 0], ["a", 0]]);
 
-console.log("Vercel API checks passed (incl. Phase 5 write path)");
+// ---- Phase 7: /s/:id link-preview page ----
+{
+  rows = [
+    { ...legacy, id: "shr1", title: "PRIVATE", blocks: [{ id: "h", type: "headline", text: "NEON <b>RIOT</b>", size: "lead" }] },
+    { ...legacy, id: "bad2", schema_version: 42 },
+  ];
+  const ok = await call(sharePage, { id: "shr1" });
+  assert.equal(ok.status, 200);
+  assert.match(ok.headers["content-type"], /text\/html/);
+  assert.ok(ok.body.includes('og:title" content="NEON &lt;b&gt;RIOT&lt;/b&gt; | NCT"'));
+  assert.ok(ok.body.includes("https://screamsheet.vercel.app/og-default.png"));
+  assert.ok(ok.body.includes("url=/#/s/shr1"));
+  assert.ok(!ok.body.includes("PRIVATE"), "private title must not leak");
+  assert.match(ok.headers["cache-control"], /s-maxage=300/);
+  const missing = await call(sharePage, { id: "nope" });
+  assert.equal(missing.status, 404);
+  assert.ok(missing.body.includes("Screamsheet not found"));
+  const invalid = await call(sharePage, { id: "../x" });
+  assert.equal(invalid.status, 404);
+  const corrupt = await call(sharePage, { id: "bad2" });
+  assert.equal(corrupt.status, 200, "unreadable rows still redirect to the app's error state");
+  assert.ok(corrupt.body.includes("url=/#/s/bad2"));
+  const post = await call(sharePage, { id: "shr1" }, "POST");
+  assert.equal(post.status, 405);
+}
+
+console.log("Vercel API checks passed (incl. Phase 5 write path, Phase 7 share page)");

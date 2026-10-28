@@ -151,6 +151,18 @@ export default function SheetFormPanel({
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <div>
+                <Label className="text-xs text-muted-foreground" htmlFor="switch-attribution">Credit line at the bottom</Label>
+                <p className="text-[11px] text-muted-foreground/80">"Fictional · Made with Screamsheet Builder" in the sheet and its exports</p>
+              </div>
+              <Switch
+                id="switch-attribution"
+                checked={settings.showAttribution === true}
+                onCheckedChange={(v) => setSettings({ ...settings, showAttribution: v })}
+                data-testid="switch-attribution"
+              />
+            </div>
           </fieldset>
     </>
   );

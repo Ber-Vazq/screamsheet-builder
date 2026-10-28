@@ -240,6 +240,18 @@ const SheetRenderer = forwardRef<HTMLDivElement, Props>(({ branding, settings, b
           blocks.map((b, i) => <BlockView key={b.id} block={b} idx={i} />)
         )}
       </div>
+      {settings.showAttribution === true && (
+        <div
+          data-testid="sheet-attribution"
+          style={{
+            borderTop: "1px solid #ddd", margin: "0 26px", padding: "6px 0 10px",
+            fontFamily: "'Share Tech Mono',monospace", fontSize: 9, letterSpacing: 2,
+            color: "#9a9a9a", textAlign: "right", textTransform: "uppercase",
+          }}
+        >
+          Fictional · Made with Screamsheet Builder · screamsheet.vercel.app
+        </div>
+      )}
     </div>
   );
 });

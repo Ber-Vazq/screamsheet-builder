@@ -5,6 +5,17 @@ import { newBlock, sheetArtifactFromTemplate, type TemplateDef } from "@/lib/tem
 
 const MAX_CATEGORIES = 8;
 
+/** Move the item with id `activeId` to the index of `overId`. Unknown ids or same id -> unchanged array. */
+export function reorderById<T extends { id: string }>(items: T[], activeId: string, overId: string): T[] {
+  const from = items.findIndex((x) => x.id === activeId);
+  const to = items.findIndex((x) => x.id === overId);
+  if (from < 0 || to < 0 || from === to) return items;
+  const copy = [...items];
+  const [moved] = copy.splice(from, 1);
+  copy.splice(to, 0, moved);
+  return copy;
+}
+
 /**
  * Owns the in-memory sheet being edited. Everything is held as ONE
  * SheetArtifact so the rest of the builder never touches raw storage rows.
@@ -41,6 +52,11 @@ export function useSheetState(tpl: TemplateDef) {
         [copy[i], copy[j]] = [copy[j], copy[i]];
         return copy;
       }),
+    [setBlocks],
+  );
+  /** Phase 7: drag-and-drop. Moves block `activeId` to where `overId` is. */
+  const reorderBlock = useCallback(
+    (activeId: string, overId: string) => setBlocks((bs) => reorderById(bs, activeId, overId)),
     [setBlocks],
   );
   const setBlockImage = useCallback(
@@ -101,6 +117,7 @@ export function useSheetState(tpl: TemplateDef) {
     addBlock,
     removeBlock,
     moveBlock,
+    reorderBlock,
     setBlockImage,
     resetToTemplate,
     loadArtifact,

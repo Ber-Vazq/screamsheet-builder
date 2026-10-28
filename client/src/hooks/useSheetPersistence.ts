@@ -39,6 +39,15 @@ export type SaveStatusState =
   | { kind: "error"; message: string };
 
 /**
+ * Phase 7: share links use the path /s/:id. That path serves link-preview tags
+ * (title, description, image) for Discord/iMessage, then redirects to /#/s/:id.
+ * Old /#/s/:id links keep working unchanged.
+ */
+export function shareUrlFor(id: string, origin = window.location.origin): string {
+  return `${origin}/s/${encodeURIComponent(id)}`;
+}
+
+/**
  * Reads ?edit= / ?load= from the URL. This app uses hash routing, so the query
  * may live in the real search string OR inside the hash (#/build/x?edit=ID).
  */
@@ -59,8 +68,12 @@ export function useSheetPersistence(opts: {
   editId: string | null;
   loadId: string | null;
   state: SheetState;
+  /** Phase 7: called after a successful manual save (not autosave). */
+  onSaved?: (mode: SaveMode) => void;
 }) {
   const { tpl, editId, loadId, state } = opts;
+  const onSavedRef = useRef(opts.onSaved);
+  onSavedRef.current = opts.onSaved;
   const { toast } = useToast();
   // When set, Save overwrites this record instead of creating a new one.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -187,10 +200,11 @@ export function useSheetPersistence(opts: {
       // Only drop the draft if nothing changed while the request was in flight.
       if (currentHashRef.current === sentHash) clearDraft(draftKeyAtSend);
       if (mode === "create") clearDraft(draftKeyAtSend);
-      setShareUrl(`${window.location.origin}${window.location.pathname}#/s/${id}`);
+      setShareUrl(shareUrlFor(id));
       // After a create, switch into edit mode so later saves overwrite it.
       if (mode === "create") setEditingId(id);
       if (auto) return; // autosave: inline status only, no toast
+      onSavedRef.current?.(mode);
       const updated = mode === "update";
       const filed = getGmKey()
         ? updated
