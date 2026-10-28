@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { supabase, TABLE } from "../_supabase.js";
 import { decodeRow, decodeWritten } from "../_artifacts.js";
+import { parseWriteMetadata, metadataColumns, WriteMetadataError, type WriteMetadata } from "../../shared/writeMetadata.js";
 
 function getOwner(req: VercelRequest): string {
   const raw = Array.isArray(req.query.owner) ? req.query.owner[0] : req.query.owner;
@@ -35,6 +36,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!title || !template || !branding || !settings || !Array.isArray(blocks)) {
       return res.status(400).json({ error: "Invalid screamsheet payload" });
     }
+    // Phase 5: metadata is only ever added (legacy -> v1), never cleared. A
+    // payload without metadata (old client, Release A) leaves the columns alone.
+    let meta: WriteMetadata;
+    try {
+      meta = parseWriteMetadata(body);
+    } catch (err) {
+      if (err instanceof WriteMetadataError) return res.status(400).json({ error: err.message });
+      throw err;
+    }
 
     // Confirm ownership before writing.
     const { data: existing, error: lookupErr } = await supabase
@@ -49,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data, error } = await supabase
       .from(TABLE)
-      .update({ title, template, branding, settings, blocks })
+      .update({ title, template, branding, settings, blocks, updated_at: Date.now(), ...metadataColumns(meta) })
       .eq("id", id)
       .eq("owner_key", owner)
       .select()

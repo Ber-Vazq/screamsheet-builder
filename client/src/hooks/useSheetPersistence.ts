@@ -7,10 +7,11 @@ import type { TemplateDef } from "@/lib/templates";
 import type { SheetState } from "@/hooks/useSheetState";
 import {
   deserializeStoredRecord,
-  serializeArtifactForStorage,
   ArtifactDecodeError,
   type StoredRecord,
 } from "@shared/artifactCodec";
+import { buildWritePayload, chooseWriteTarget } from "@shared/writeMetadata";
+import { UPGRADE_ON_SAVE } from "@/lib/featureFlags";
 
 export type SaveMode = "update" | "create";
 
@@ -40,6 +41,9 @@ export function useSheetPersistence(opts: {
   // When set, Save overwrites this record instead of creating a new one.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  // Phase 5: schema version of the row being edited (0 = legacy, 1 = v1).
+  // null = nothing saved yet (new sheet or unsaved copy).
+  const [storedVersion, setStoredVersion] = useState<number | null>(null);
 
   const sourceId = editId ?? loadId;
 
@@ -58,6 +62,7 @@ export function useSheetPersistence(opts: {
           }
           state.loadArtifact(artifact, !editId);
           setEditingId(editId ? sourceId : null);
+          setStoredVersion(editId ? artifact.version : null);
         })
         .catch((err) => {
           if (cancelled) return;
@@ -71,6 +76,7 @@ export function useSheetPersistence(opts: {
     } else {
       state.resetToTemplate(tpl);
       setEditingId(null);
+      setStoredVersion(null);
     }
     setShareUrl(null);
     return () => {
@@ -83,11 +89,13 @@ export function useSheetPersistence(opts: {
   const save = useMutation({
     mutationFn: async (mode: SaveMode) => {
       const ownerKey = getGmKey();
-      // Release A: always write the legacy row shape. The URL template wins,
+      const isUpdate = mode === "update" && Boolean(editingId);
+      // Phase 5: creates/copies write v1. Updates keep a legacy row legacy
+      // unless UPGRADE_ON_SAVE (Release B) is on. The URL template wins,
       // matching pre-refactor behavior.
-      const { id: _ignore, ...row } = serializeArtifactForStorage(state.sheet, "legacy");
-      const payload = { ...row, template: tpl.id, ownerKey };
-      if (mode === "update" && editingId) {
+      const target = chooseWriteTarget(isUpdate ? "update" : "create", storedVersion, UPGRADE_ON_SAVE);
+      const payload = { ...buildWritePayload(state.sheet, target), template: tpl.id, ownerKey };
+      if (isUpdate) {
         const res = await apiRequest(
           "PUT",
           `/api/screamsheets/${editingId}?owner=${encodeURIComponent(ownerKey)}`,
@@ -101,6 +109,8 @@ export function useSheetPersistence(opts: {
     onSuccess: ({ raw, mode }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/screamsheets"] });
       const id = String(raw.id);
+      // The response is the saved artifact; remember its version for the next save.
+      if (typeof raw.version === "number") setStoredVersion(raw.version);
       setShareUrl(`${window.location.origin}${window.location.pathname}#/s/${id}`);
       // After a create, switch into edit mode so later saves overwrite it.
       if (mode === "create") setEditingId(id);

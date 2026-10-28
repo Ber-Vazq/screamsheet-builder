@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { nanoid } from "nanoid";
 import { supabase, TABLE } from "../_supabase.js";
 import { decodeRows, decodeWritten } from "../_artifacts.js";
+import { parseWriteMetadata, metadataColumns, WriteMetadataError, type WriteMetadata } from "../../shared/writeMetadata.js";
 
 function getOwner(req: VercelRequest): string {
   const raw = Array.isArray(req.query.owner) ? req.query.owner[0] : req.query.owner;
@@ -30,6 +31,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!title || !template || !branding || !settings || !Array.isArray(blocks)) {
       return res.status(400).json({ error: "Invalid screamsheet payload" });
     }
+    // Phase 5: optional artifactType/schemaVersion. id, owner_key and created_at
+    // are always set here, never taken from the client.
+    let meta: WriteMetadata;
+    try {
+      meta = parseWriteMetadata(body);
+    } catch (err) {
+      if (err instanceof WriteMetadataError) return res.status(400).json({ error: err.message });
+      throw err;
+    }
     const row = {
       id: nanoid(10),
       title,
@@ -39,6 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       blocks,
       owner_key: typeof ownerKey === "string" && ownerKey.trim() ? ownerKey.trim() : null,
       created_at: Date.now(),
+      ...metadataColumns(meta),
     };
     const { data, error } = await supabase
       .from(TABLE)

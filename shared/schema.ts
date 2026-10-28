@@ -20,9 +20,11 @@ export const screamsheets = sqliteTable("screamsheets", {
   createdAt: integer("created_at").notNull(),
   // Phase 4: artifact metadata. NULL on every legacy row and NULL means
   // "legacy sheet, schema version 0" (see shared/artifactCodec.ts).
-  // Nothing writes these yet (Release A); they exist so reads are ready.
+  // Phase 5: new sheets and copies write artifact_type='sheet', schema_version=1.
   artifactType: text("artifact_type"),
   schemaVersion: integer("schema_version"),
+  // Phase 5: epoch ms of the last update. NULL = not edited since Phase 5.
+  updatedAt: integer("updated_at"),
 });
 
 export type Branding = {
