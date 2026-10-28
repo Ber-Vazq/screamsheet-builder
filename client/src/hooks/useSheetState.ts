@@ -71,19 +71,22 @@ export function useSheetState(tpl: TemplateDef) {
   }, [categoryRaw]);
 
   // --- whole-sheet replacement (used by persistence when loading) ---
-  const resetToTemplate = useCallback((t: TemplateDef) => {
-    setSheet(sheetArtifactFromTemplate(t));
+  /** Returns the sheet it set, so callers can fingerprint it (Phase 6). */
+  const resetToTemplate = useCallback((t: TemplateDef): SheetArtifact => {
+    const next = sheetArtifactFromTemplate(t);
+    setSheet(next);
     setCategoryRaw(t.settings.categories.join(", "));
+    return next;
   }, []);
 
   /** asCopy=true is the ?load= flow: same content, "(copy)" title, no id yet. */
-  const loadArtifact = useCallback((a: SheetArtifact, asCopy: boolean) => {
-    setSheet(
-      asCopy
-        ? { ...a, id: "", shareSlug: "", createdAt: null, title: a.title + " (copy)" }
-        : a,
-    );
+  const loadArtifact = useCallback((a: SheetArtifact, asCopy: boolean): SheetArtifact => {
+    const next = asCopy
+      ? { ...a, id: "", shareSlug: "", createdAt: null, title: a.title + " (copy)" }
+      : a;
+    setSheet(next);
     setCategoryRaw(a.settings.categories.join(", "));
+    return next;
   }, []);
 
   return {
