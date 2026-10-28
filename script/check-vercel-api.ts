@@ -118,7 +118,7 @@ r = await call(list, {}, "POST", { ...legacyBody, title: "Old client", ownerKey:
 assert.equal(r.status, 200); assert.equal(row(r.body.id).schema_version, null); assert.equal(r.body.version, 0);
 
 // Bad metadata is refused
-for (const bad of [{ artifactType: "emailThread", schemaVersion: 1 }, { artifactType: "bogus", schemaVersion: 1 }, { artifactType: "sheet", schemaVersion: 2 }, { artifactType: "sheet" }, { schemaVersion: 1 }, { artifactType: "sheet", schemaVersion: "1" }]) {
+for (const bad of [{ artifactType: "bogus", schemaVersion: 1 }, { artifactType: "sheet", schemaVersion: 2 }, { artifactType: "sheet" }, { schemaVersion: 1 }, { artifactType: "sheet", schemaVersion: "1" }]) {
   const n = rows.length;
   r = await call(list, {}, "POST", { ...legacyBody, ownerKey: "gm", ...bad });
   assert.equal(r.status, 400, `rejects ${JSON.stringify(bad)}`); assert.equal(rows.length, n, "nothing inserted");
@@ -243,4 +243,55 @@ assert.deepEqual(mixed.body.map((x: any) => [x.id, x.version]), [["b", 1], ["c",
   assert.equal(t.status, 403);
 }
 
-console.log("Vercel API checks passed (incl. Phase 5 write path, Phase 7 share page, Phase 8 text threads)");
+// ---- Phase 9: email threads ----
+{
+  const emailBody = {
+    title: "Arasaka legal (private)",
+    template: "email-arasaka-legal",
+    branding: {},
+    settings: { style: "corporate", clientName: "ARASAKA SECURE MAIL", mailbox: "j@arasaka.corp", subject: "Cease and desist", classification: "CONFIDENTIAL", accent: "#c0392b", showAttribution: true },
+    blocks: [{ id: "e1", fromName: "Legal", fromAddress: "legal@arasaka.corp", to: ["j@arasaka.corp"], cc: [], subject: "Cease and desist", body: "Return the shard.", sentAt: "Mon 08:00", attachments: ["a.pdf"], quoted: "", flagged: true }],
+    artifactType: "emailThread",
+    schemaVersion: 1,
+  };
+  rows = [{ ...legacy, id: "legE" }];
+  let e = await call(list, {}, "POST", { ...emailBody, ownerKey: "gm" });
+  assert.equal(e.status, 200, "email create allowed");
+  const eid = e.body.id;
+  assert.equal(row(eid).artifact_type, "emailThread"); assert.equal(row(eid).schema_version, 1);
+  assert.equal(e.body.type, "emailThread"); assert.equal(e.body.messages[0].attachments[0], "a.pdf");
+  const got = (await call(one, { id: eid })).body;
+  assert.equal(got.style, "corporate"); assert.equal(got.subject, "Cease and desist"); assert.equal(got.messages[0].flagged, true);
+  const lib = await call(list, { owner: "gm" });
+  assert.deepEqual(lib.body.map((a: any) => a.type).sort(), ["emailThread", "sheet"]);
+  // Share page shows the subject + first body, never the private title
+  const sp = await call(sharePage, { id: eid });
+  assert.ok(sp.body.includes('og:title" content="Cease and desist'));
+  assert.ok(sp.body.includes("Return the shard."));
+  assert.ok(!sp.body.includes("(private)"));
+  // Bad payloads -> 400, nothing written
+  for (const bad of [
+    { settings: { ...emailBody.settings, style: "outlook" } },
+    { settings: "nope" },
+    { blocks: [{ body: "no id" }] },
+    { blocks: Array.from({ length: 301 }, (_, i) => ({ id: `e${i}` })) },
+  ]) {
+    const n = rows.length;
+    e = await call(list, {}, "POST", { ...emailBody, ownerKey: "gm", ...bad });
+    assert.equal(e.status, 400, `rejects ${JSON.stringify(bad).slice(0, 60)}`); assert.equal(rows.length, n);
+  }
+  // Update in place, then the type guard both ways
+  e = await call(one, { id: eid, owner: "gm" }, "PUT", { ...emailBody, title: "v2" });
+  assert.equal(e.status, 200); assert.equal(row(eid).title, "v2");
+  e = await call(one, { id: eid, owner: "gm" }, "PUT", { ...v1Body, title: "hijack" });
+  assert.equal(e.status, 409); assert.equal(row(eid).title, "v2");
+  e = await call(one, { id: eid, owner: "gm" }, "PUT", { ...emailBody, settings: { ...emailBody.settings }, artifactType: "textThread" });
+  assert.ok(e.status === 400 || e.status === 409, "email row can't become a text thread"); assert.equal(row(eid).artifact_type, "emailThread");
+  const legBefore = JSON.stringify(row("legE"));
+  e = await call(one, { id: "legE", owner: "gm" }, "PUT", emailBody);
+  assert.equal(e.status, 409); assert.equal(JSON.stringify(row("legE")), legBefore, "legacy row untouched");
+  e = await call(one, { id: eid, owner: "intruder" }, "PUT", emailBody);
+  assert.equal(e.status, 403);
+}
+
+console.log("Vercel API checks passed (incl. Phase 5 write path, Phase 7 share page, Phase 8 text threads, Phase 9 email threads)");

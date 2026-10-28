@@ -15,8 +15,8 @@ export class WriteMetadataError extends Error {
   }
 }
 
-/** Types/versions the API currently accepts on write. Phase 8 adds text threads; Phase 9 email. */
-const WRITABLE_TYPES = new Set<string>(["sheet", "textThread"]);
+/** Types/versions the API accepts on write. Phase 8 added text threads; Phase 9 email threads. */
+const WRITABLE_TYPES = new Set<string>(["sheet", "textThread", "emailThread"]);
 const WRITABLE_VERSIONS = new Set([1]);
 
 function pick(body: Record<string, unknown>, camel: string, snake: string): unknown {

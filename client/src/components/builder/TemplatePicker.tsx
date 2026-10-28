@@ -1,7 +1,8 @@
 import { Link } from "wouter";
-import { MessageSquare, Newspaper } from "lucide-react";
+import { Mail, MessageSquare, Newspaper } from "lucide-react";
 import { TEMPLATES } from "@/lib/templates";
 import { TEXT_TEMPLATES, PLATFORM_LABELS, type TextTemplateDef } from "@/lib/textTemplates";
+import { EMAIL_TEMPLATES, EMAIL_STYLE_LABELS, type EmailTemplateDef } from "@/lib/emailTemplates";
 
 /** Phase 8: tiny phone mock for a text-thread template card. */
 function TextThumb({ tpl }: { tpl: TextTemplateDef }) {
@@ -37,6 +38,52 @@ function TextTemplateCard({ tpl }: { tpl: TextTemplateDef }) {
           <div className="font-semibold text-sm uppercase tracking-wide" style={{ fontFamily: "'Rajdhani',sans-serif" }}>{tpl.name}</div>
           <p className="text-xs text-muted-foreground mt-1 leading-snug">{tpl.description}</p>
           <p className="text-[10px] uppercase tracking-widest text-primary/80 mt-1.5">{PLATFORM_LABELS[tpl.platform]}</p>
+        </div>
+      </a>
+    </Link>
+  );
+}
+
+/** Phase 9: tiny mail-window mock for an email template card. */
+function EmailThumb({ tpl }: { tpl: EmailTemplateDef }) {
+  const { settings } = tpl.build();
+  const term = tpl.style === "terminal";
+  const web = tpl.style === "webmail";
+  const a = settings.accent;
+  const line = (w: string, key: number) => (
+    <span key={key} style={{ display: "block", height: 3, width: w, background: term ? `${a}66` : "#d6d9de", borderRadius: 1 }} />
+  );
+  return (
+    <div className="absolute inset-0 flex justify-center items-end" style={{ background: term ? "#000" : "#dfe3ea" }}>
+      <div style={{ width: 150, height: 108, background: term ? "#050806" : web ? "#fffdf7" : "#f3f4f6", border: term ? `1px solid ${a}88` : "1px solid #c8ccd4", borderBottom: "none", borderRadius: web ? "8px 8px 0 0" : 0, overflow: "hidden" }}>
+        <div style={{ background: term ? "#0b120d" : web ? `linear-gradient(90deg, ${a}, #8e44ad)` : a, color: term ? a : "#fff", fontSize: 6, padding: "3px 6px", fontFamily: term ? "'Share Tech Mono',monospace" : "sans-serif", letterSpacing: term ? 1 : 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {settings.clientName}
+        </div>
+        {settings.classification && (
+          <div style={{ background: term ? "transparent" : "#b91c1c", color: term ? a : "#fff", fontSize: 4.5, textAlign: "center", letterSpacing: 1, padding: "1px 0" }}>{settings.classification.slice(0, 32)}</div>
+        )}
+        <div style={{ padding: "5px 7px", display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ fontSize: 6.5, fontWeight: 700, color: term ? a : "#111", fontFamily: term ? "'Share Tech Mono',monospace" : "sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{settings.subject}</div>
+          {[0, 1].map((k) => (
+            <div key={k} style={{ background: term ? "#08100a" : "#fff", border: term ? `1px solid ${a}55` : "1px solid #e1e4e8", borderRadius: web ? 4 : 0, padding: 4, display: "flex", flexDirection: "column", gap: 2 }}>
+              {line("40%", 0)}{line("95%", 1)}{line("70%", 2)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmailTemplateCard({ tpl }: { tpl: EmailTemplateDef }) {
+  return (
+    <Link href={`/build/email/${tpl.id}`} data-testid={`card-template-${tpl.id}`}>
+      <a className="group block border border-card-border bg-card hover-elevate overflow-hidden hud-panel">
+        <div className="h-32 border-b border-card-border relative overflow-hidden"><EmailThumb tpl={tpl} /></div>
+        <div className="p-3">
+          <div className="font-semibold text-sm uppercase tracking-wide" style={{ fontFamily: "'Rajdhani',sans-serif" }}>{tpl.name}</div>
+          <p className="text-xs text-muted-foreground mt-1 leading-snug">{tpl.description}</p>
+          <p className="text-[10px] uppercase tracking-widest text-primary/80 mt-1.5">{EMAIL_STYLE_LABELS[tpl.style]}</p>
         </div>
       </a>
     </Link>
@@ -152,6 +199,12 @@ export default function TemplatePicker() {
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {TEXT_TEMPLATES.map((t) => <TextTemplateCard key={t.id} tpl={t} />)}
+        </div>
+        <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mt-8 mb-4 flex items-center gap-2" data-testid="heading-email-threads">
+          <Mail className="w-4 h-4" /> Email threads
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {EMAIL_TEMPLATES.map((t) => <EmailTemplateCard key={t.id} tpl={t} />)}
         </div>
       </section>
   );

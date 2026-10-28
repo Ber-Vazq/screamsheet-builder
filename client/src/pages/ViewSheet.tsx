@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import type { Artifact, SheetArtifact, TextThreadArtifact } from "@shared/artifact";
+import type { Artifact, EmailThreadArtifact, SheetArtifact, TextThreadArtifact } from "@shared/artifact";
 import SheetRenderer from "@/components/SheetRenderer";
 import TextThreadRenderer, { PHONE_WIDTH } from "@/components/text/TextThreadRenderer";
+import EmailThreadRenderer, { EMAIL_WIDTH } from "@/components/email/EmailThreadRenderer";
 import { exportPng, exportPdf } from "@/lib/exportSheet";
 import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/AppShell";
@@ -14,9 +15,9 @@ import { ConfirmFlash, useConfirmFlash } from "@/components/ConfirmFlash";
 
 const SHEET_WIDTH = 816;
 
-/** Artifact types this viewer can show. Email threads arrive in Phase 9. */
-type Viewable = SheetArtifact | TextThreadArtifact;
-const isViewable = (a: Artifact): a is Viewable => a.type === "sheet" || a.type === "textThread";
+/** Artifact types this viewer can show (all three as of Phase 9). Anything else -> "unsupported". */
+type Viewable = SheetArtifact | TextThreadArtifact | EmailThreadArtifact;
+const isViewable = (a: Artifact): a is Viewable => a.type === "sheet" || a.type === "textThread" || a.type === "emailThread";
 
 type ViewState =
   | { kind: "loading" }
@@ -52,11 +53,13 @@ export default function ViewSheet() {
   const artifact = view.kind === "ready" ? view.artifact : null;
   const sheet = artifact?.type === "sheet" ? artifact : null;
   const thread = artifact?.type === "textThread" ? artifact : null;
+  const email = artifact?.type === "emailThread" ? artifact : null;
 
   useEffect(() => {
     if (sheet) document.title = `${sheet.branding.outlet || "Screamsheet"} // Screamsheet`;
     else if (thread) document.title = `${thread.headerTitle || "Messages"} // Screamsheet`;
-  }, [sheet, thread]);
+    else if (email) document.title = `${email.subject || "Email"} // Screamsheet`;
+  }, [sheet, thread, email]);
 
   const doExport = async (kind: "png" | "pdf") => {
     if (!ref.current || !artifact) return;
@@ -126,6 +129,20 @@ export default function ViewSheet() {
           >
             <div className="shadow-2xl shadow-black/60">
               <TextThreadRenderer ref={ref} thread={thread} />
+            </div>
+          </SheetFit>
+        )}
+        {email && (
+          <SheetFit
+            width={EMAIL_WIDTH}
+            fitRef={fitRef}
+            scale={scale}
+            setScale={setScale}
+            sheetHeight={sheetHeight}
+            setSheetHeight={setSheetHeight}
+          >
+            <div className="shadow-2xl shadow-black/60">
+              <EmailThreadRenderer ref={ref} thread={email} />
             </div>
           </SheetFit>
         )}
