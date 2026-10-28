@@ -5,7 +5,8 @@ import type { Artifact } from "./artifact.js";
 import { serializeArtifactForStorage, type StorageTarget } from "./artifactCodec.js";
 
 /** Metadata a client may ask the server to persist. null = "legacy write, leave columns alone". */
-export type WriteMetadata = { artifactType: "sheet"; schemaVersion: 1 } | null;
+export type WritableType = "sheet" | "textThread" | "emailThread";
+export type WriteMetadata = { artifactType: WritableType; schemaVersion: 1 } | null;
 
 export class WriteMetadataError extends Error {
   constructor(message: string) {
@@ -14,8 +15,8 @@ export class WriteMetadataError extends Error {
   }
 }
 
-/** Types/versions the API currently accepts on write. Loosen in Phase 8/9. */
-const WRITABLE_TYPES = new Set(["sheet"]);
+/** Types/versions the API currently accepts on write. Phase 8 adds text threads; Phase 9 email. */
+const WRITABLE_TYPES = new Set<string>(["sheet", "textThread"]);
 const WRITABLE_VERSIONS = new Set([1]);
 
 function pick(body: Record<string, unknown>, camel: string, snake: string): unknown {
@@ -39,7 +40,25 @@ export function parseWriteMetadata(body: unknown): WriteMetadata {
   if (typeof version !== "number" || !WRITABLE_VERSIONS.has(version)) {
     throw new WriteMetadataError(`schemaVersion must be one of: ${Array.from(WRITABLE_VERSIONS).join(", ")}`);
   }
-  return { artifactType: "sheet", schemaVersion: 1 };
+  return { artifactType: type as WritableType, schemaVersion: 1 };
+}
+
+/** The artifact type a write is for. No metadata = an old sheet client. */
+export function writeType(meta: WriteMetadata): WritableType {
+  return meta ? meta.artifactType : "sheet";
+}
+
+/**
+ * PUT guard: a row can't change type (a sheet can't become a text thread).
+ * storedType null/undefined means a legacy row, which is a sheet.
+ * Returns an error message for a 409, or null if allowed.
+ */
+export function typeChangeError(storedType: string | null | undefined, meta: WriteMetadata): string | null {
+  const stored = storedType || "sheet";
+  const incoming = writeType(meta);
+  if (stored === incoming) return null;
+  const label = (t: string) => (t === "textThread" ? "text thread" : t === "emailThread" ? "email thread" : t === "sheet" ? "screamsheet" : t);
+  return `This is a ${label(stored)}; it can't be saved as a ${label(incoming)}.`;
 }
 
 /** Storage columns to set for a write. Empty object = don't touch the columns (never downgrade). */
@@ -57,8 +76,10 @@ export function chooseWriteTarget(
   mode: "create" | "update",
   storedVersion: number | null,
   upgradeOnSave: boolean,
+  type: WritableType = "sheet",
 ): StorageTarget {
-  if (mode === "create") return "v1";
+  // Threads have no legacy format, so they are always v1.
+  if (mode === "create" || type !== "sheet") return "v1";
   return upgradeOnSave || storedVersion === 1 ? "v1" : "legacy";
 }
 

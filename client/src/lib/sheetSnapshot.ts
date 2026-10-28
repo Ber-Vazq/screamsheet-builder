@@ -1,6 +1,6 @@
 // Phase 6: content fingerprint used for dirty-state, autosave and drafts.
 // Pure (no React, no storage) so it can be unit-tested with tsx.
-import type { SheetArtifact } from "../../../shared/artifact";
+import type { EmailThreadArtifact, SheetArtifact, TextThreadArtifact } from "../../../shared/artifact";
 
 /** JSON.stringify with sorted object keys, so key order never causes a false "unsaved". */
 export function stableStringify(value: unknown): string {
@@ -32,4 +32,18 @@ export function fnv1a(input: string): string {
 export function sheetContentHash(sheet: SheetArtifact, template: string): string {
   const { title, branding, settings, blocks } = sheet;
   return `${fnv1a(stableStringify({ title, template, branding, settings, blocks }))}:${title.length}:${blocks.length}`;
+}
+
+/** Phase 8: same idea for text threads (settings + messages are what gets saved). */
+export function textThreadContentHash(t: TextThreadArtifact, template: string): string {
+  const { title, platform, participants, selfId, headerTitle, headerSubtitle, clock, showAttribution, messages } = t;
+  const body = { title, template, platform, participants, selfId, headerTitle, headerSubtitle, clock, showAttribution, messages };
+  return `${fnv1a(stableStringify(body))}:${title.length}:${messages.length}`;
+}
+
+/** Phase 9: email threads. */
+export function emailThreadContentHash(t: EmailThreadArtifact, template: string): string {
+  const { title, style, clientName, mailbox, subject, classification, accent, showAttribution, messages } = t;
+  const body = { title, template, style, clientName, mailbox, subject, classification, accent, showAttribution, messages };
+  return `${fnv1a(stableStringify(body))}:${title.length}:${messages.length}`;
 }

@@ -2,14 +2,15 @@ import type { Express } from "express";
 import { createServer } from 'node:http';
 import type { Server } from 'node:http';
 import { storage } from "./storage";
-import { insertScreamsheetSchema } from "@shared/schema";
+import { insertScreamsheetSchema, insertThreadSchema, type InsertScreamsheet } from "@shared/schema";
+import { validateThreadPayload } from "@shared/threadCodec";
 import {
   deserializeStoredRecord,
   deserializeMany,
   logDecodeFailure,
   type StoredRecord,
 } from "@shared/artifactCodec";
-import { parseWriteMetadata, WriteMetadataError, type WriteMetadata } from "@shared/writeMetadata";
+import { parseWriteMetadata, WriteMetadataError, writeType, type WriteMetadata } from "@shared/writeMetadata";
 import { describeArtifact, isValidShareId, renderSharePage } from "@shared/shareMeta";
 
 /** Phase 5: same metadata rules as the Vercel API. Returns undefined after sending a 400. */
@@ -23,6 +24,35 @@ function readMeta(body: unknown, res: any): WriteMetadata | undefined {
     }
     throw err;
   }
+}
+
+/**
+ * Phase 8: validate a write body for its artifact type. Sheets use the strict
+ * sheet schema; threads use the loose column schema plus validateThreadPayload.
+ * Returns undefined after sending a 400.
+ */
+function readBody(body: unknown, meta: WriteMetadata, res: any): InsertScreamsheet | undefined {
+  const type = writeType(meta);
+  if (type === "sheet") {
+    const parsed = insertScreamsheetSchema.safeParse(body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return undefined;
+    }
+    return parsed.data;
+  }
+  const parsed = insertThreadSchema.safeParse(body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return undefined;
+  }
+  const problem = validateThreadPayload(type, parsed.data as Record<string, unknown>);
+  if (problem) {
+    res.status(400).json({ error: problem });
+    return undefined;
+  }
+  // Same columns; the codec reads them back by artifact_type.
+  return parsed.data as unknown as InsertScreamsheet;
 }
 
 // Phase 4: same contract as api/_artifacts.ts. Artifacts never include ownerKey.
@@ -42,13 +72,11 @@ export async function registerRoutes(
 ): Promise<Server> {
   // Save a screamsheet -> returns the row with its share id
   app.post("/api/screamsheets", async (req, res) => {
-    const parsed = insertScreamsheetSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
-    }
     const meta = readMeta(req.body, res);
     if (meta === undefined) return;
-    const sheet = await storage.createScreamsheet(parsed.data, meta);
+    const data = readBody(req.body, meta, res);
+    if (!data) return;
+    const sheet = await storage.createScreamsheet(data, meta);
     res.json(decodeWritten(sheet as StoredRecord, "POST /api/screamsheets"));
   });
 
@@ -95,16 +123,15 @@ export async function registerRoutes(
   // Update a screamsheet in place, only if the GM key matches
   app.put("/api/screamsheets/:id", async (req, res) => {
     const owner = String(req.query.owner ?? "").trim();
-    const parsed = insertScreamsheetSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
-    }
     const meta = readMeta(req.body, res);
     if (meta === undefined) return;
-    const result = await storage.updateScreamsheet(req.params.id, owner, parsed.data, meta);
+    const data = readBody(req.body, meta, res);
+    if (!data) return;
+    const result = await storage.updateScreamsheet(req.params.id, owner, data, meta);
     if (result === "notfound") return res.status(404).json({ error: "Not found" });
     if (result === "forbidden")
       return res.status(403).json({ error: "This screamsheet belongs to a different GM key." });
+    if (typeof result === "object" && "conflict" in result) return res.status(409).json({ error: result.conflict });
     res.json(decodeWritten(result as StoredRecord, "PUT /api/screamsheets/:id"));
   });
 

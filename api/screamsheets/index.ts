@@ -2,7 +2,14 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { nanoid } from "nanoid";
 import { supabase, TABLE } from "../_supabase.js";
 import { decodeRows, decodeWritten } from "../_artifacts.js";
-import { parseWriteMetadata, metadataColumns, WriteMetadataError, type WriteMetadata } from "../../shared/writeMetadata.js";
+import {
+  parseWriteMetadata,
+  metadataColumns,
+  WriteMetadataError,
+  writeType,
+  type WriteMetadata,
+} from "../../shared/writeMetadata.js";
+import { validateThreadPayload } from "../../shared/threadCodec.js";
 
 function getOwner(req: VercelRequest): string {
   const raw = Array.isArray(req.query.owner) ? req.query.owner[0] : req.query.owner;
@@ -40,6 +47,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (err instanceof WriteMetadataError) return res.status(400).json({ error: err.message });
       throw err;
     }
+    // Phase 8: type-specific shape checks for text/email threads.
+    const problem = validateThreadPayload(writeType(meta), body);
+    if (problem) return res.status(400).json({ error: problem });
     const row = {
       id: nanoid(10),
       title,

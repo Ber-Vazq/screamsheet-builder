@@ -1,6 +1,12 @@
 // Compatibility layer: the ONLY place that knows what stored rows look like.
 import type { Artifact, SheetArtifact } from "./artifact.js";
 import type { Branding, SheetSettings, Block } from "./schema.js";
+import {
+  textThreadFromColumns,
+  textThreadToColumns,
+  emailThreadFromColumns,
+  emailThreadToColumns,
+} from "./threadCodec.js";
 
 /** A raw row from Supabase, Drizzle, or an API response. Deliberately loose. */
 export type StoredRecord = Record<string, unknown>;
@@ -97,6 +103,28 @@ function decodeV1(record: StoredRecord, type: unknown): Artifact {
     // v1 sheets share legacy columns; only the version label differs.
     return { ...normalizeLegacySheetToArtifact(record), version: 1 };
   }
+  if (type === "textThread" || type === "emailThread") {
+    // Phase 8/9: threads reuse the same columns (settings + blocks as messages).
+    const id = record.id;
+    if (typeof id !== "string" || id === "") throw new ArtifactDecodeError("Row has no id");
+    const ownerKey = field(record, "owner_key", "ownerKey");
+    const base = {
+      id,
+      title: typeof record.title === "string" ? record.title : "Untitled",
+      createdAt: toNumberOrNull(field(record, "created_at", "createdAt")),
+      updatedAt: toNumberOrNull(field(record, "updated_at", "updatedAt")),
+      shareSlug: id,
+      gmKeyScoped: typeof ownerKey === "string" && ownerKey !== "",
+      version: 1 as const,
+    };
+    const template = typeof record.template === "string" ? record.template : "";
+    const settings = json<unknown>(record.settings, "settings", id);
+    const blocks = json<unknown>(record.blocks, "blocks", id);
+    if (!Array.isArray(blocks)) throw new ArtifactDecodeError(`"blocks" is not a message list`, id);
+    return type === "textThread"
+      ? textThreadFromColumns(base, template, settings, blocks)
+      : emailThreadFromColumns(base, template, settings, blocks);
+  }
   throw new ArtifactDecodeError(`artifact_type "${String(type)}" is not supported yet`, idOf(record));
 }
 
@@ -112,12 +140,19 @@ export function serializeArtifactForStorage(
   target: StorageTarget = "legacy",
 ): StoredRecord {
   if (artifact.type !== "sheet") {
-    throw new ArtifactDecodeError(
-      target === "legacy"
-        ? `${artifact.type} cannot be stored in legacy format`
-        : `${artifact.type} storage not implemented yet`,
-      artifact.id,
-    );
+    // Threads only exist as v1; the legacy format can't describe them.
+    if (target === "legacy") {
+      throw new ArtifactDecodeError(`${artifact.type} cannot be stored in legacy format`, artifact.id);
+    }
+    const cols = artifact.type === "textThread" ? textThreadToColumns(artifact) : emailThreadToColumns(artifact);
+    return {
+      id: artifact.id,
+      title: artifact.title,
+      template: artifact.template,
+      ...cols,
+      artifact_type: artifact.type,
+      schema_version: 1,
+    };
   }
   const row: StoredRecord = {
     id: artifact.id,

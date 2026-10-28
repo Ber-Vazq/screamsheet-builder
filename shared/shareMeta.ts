@@ -42,8 +42,9 @@ export function describeArtifact(a: Artifact): { title: string; description: str
     return { title, description };
   }
   if (a.type === "textThread") {
-    const who = (a.participants ?? []).filter(Boolean).slice(0, 3).join(", ");
-    const first = a.messages?.[0]?.body ?? "";
+    const others = (a.participants ?? []).filter((p) => p.id !== a.selfId).map((p) => p.name.trim()).filter(Boolean);
+    const who = a.headerTitle?.trim() || others.slice(0, 3).join(", ");
+    const first = (a.messages ?? []).find((m) => m.kind !== "system" && m.body.trim())?.body ?? "";
     return {
       title: who ? `Messages with ${clip(who, 80)}` : "Intercepted messages",
       description: first ? clip(first, 180) : "An intercepted text thread.",
@@ -51,8 +52,8 @@ export function describeArtifact(a: Artifact): { title: string; description: str
   }
   const first = a.messages?.[0];
   return {
-    title: clip(a.subject || first?.subject || "Intercepted email", 100),
-    description: first?.body ? clip(first.body, 180) : "An intercepted email thread.",
+    title: clip(a.subject?.trim() || first?.subject?.trim() || "Intercepted email", 100),
+    description: first?.body?.trim() ? clip(first.body, 180) : "An intercepted email thread.",
   };
 }
 

@@ -118,7 +118,7 @@ r = await call(list, {}, "POST", { ...legacyBody, title: "Old client", ownerKey:
 assert.equal(r.status, 200); assert.equal(row(r.body.id).schema_version, null); assert.equal(r.body.version, 0);
 
 // Bad metadata is refused
-for (const bad of [{ artifactType: "textThread", schemaVersion: 1 }, { artifactType: "sheet", schemaVersion: 2 }, { artifactType: "sheet" }, { schemaVersion: 1 }, { artifactType: "sheet", schemaVersion: "1" }]) {
+for (const bad of [{ artifactType: "emailThread", schemaVersion: 1 }, { artifactType: "bogus", schemaVersion: 1 }, { artifactType: "sheet", schemaVersion: 2 }, { artifactType: "sheet" }, { schemaVersion: 1 }, { artifactType: "sheet", schemaVersion: "1" }]) {
   const n = rows.length;
   r = await call(list, {}, "POST", { ...legacyBody, ownerKey: "gm", ...bad });
   assert.equal(r.status, 400, `rejects ${JSON.stringify(bad)}`); assert.equal(rows.length, n, "nothing inserted");
@@ -187,4 +187,60 @@ assert.deepEqual(mixed.body.map((x: any) => [x.id, x.version]), [["b", 1], ["c",
   assert.equal(post.status, 405);
 }
 
-console.log("Vercel API checks passed (incl. Phase 5 write path, Phase 7 share page)");
+// ---- Phase 8: text threads + type-change guard ----
+{
+  const textBody = {
+    title: "Fixer chat",
+    template: "text-cyber",
+    branding: {},
+    settings: {
+      platform: "cyber",
+      participants: [{ id: "me", name: "You", color: "#00e5ff" }, { id: "f", name: "Fixer", color: "#ff2bd6" }],
+      selfId: "me", headerTitle: "FIXER", headerSubtitle: "", clock: "11:47 PM", showAttribution: true,
+    },
+    blocks: [{ id: "m1", from: "f", body: "Got work.", sentAt: "", kind: "text", status: "none" }],
+    artifactType: "textThread",
+    schemaVersion: 1,
+  };
+  rows = [{ ...legacy, id: "legT" }];
+  let t = await call(list, {}, "POST", { ...textBody, ownerKey: "gm" });
+  assert.equal(t.status, 200);
+  const tid = t.body.id;
+  assert.equal(row(tid).artifact_type, "textThread"); assert.equal(row(tid).schema_version, 1);
+  assert.equal(t.body.type, "textThread"); assert.equal(t.body.messages[0].body, "Got work.");
+  assert.equal((await call(one, { id: tid })).body.platform, "cyber");
+  // Library returns sheets and threads together
+  const lib = await call(list, { owner: "gm" });
+  assert.deepEqual(lib.body.map((a: any) => a.type).sort(), ["sheet", "textThread"]);
+  // Share page uses thread content, not the private title
+  const sp = await call(sharePage, { id: tid });
+  assert.ok(sp.body.includes('og:title" content="Messages with FIXER'));
+  assert.ok(!sp.body.includes("Fixer chat"));
+  // Bad thread payloads -> 400, nothing written
+  for (const bad of [
+    { settings: { ...textBody.settings, platform: "nokia" } },
+    { settings: { ...textBody.settings, participants: [] } },
+    { blocks: [{ body: "no id" }] },
+    { blocks: Array.from({ length: 301 }, (_, i) => ({ id: `m${i}` })) },
+  ]) {
+    const n = rows.length;
+    t = await call(list, {}, "POST", { ...textBody, ownerKey: "gm", ...bad });
+    assert.equal(t.status, 400, `rejects ${JSON.stringify(bad).slice(0, 60)}`); assert.equal(rows.length, n);
+  }
+  // Update thread in place
+  t = await call(one, { id: tid, owner: "gm" }, "PUT", { ...textBody, title: "Fixer chat v2" });
+  assert.equal(t.status, 200); assert.equal(row(tid).title, "Fixer chat v2");
+  // Type can't change: sheet payload onto a thread, thread onto a legacy sheet, legacy (no metadata) onto a thread
+  t = await call(one, { id: tid, owner: "gm" }, "PUT", { ...v1Body, title: "hijack" });
+  assert.equal(t.status, 409); assert.equal(row(tid).title, "Fixer chat v2");
+  t = await call(one, { id: tid, owner: "gm" }, "PUT", { ...legacyBody, title: "hijack" });
+  assert.equal(t.status, 409); assert.equal(row(tid).artifact_type, "textThread");
+  const legBefore = JSON.stringify(row("legT"));
+  t = await call(one, { id: "legT", owner: "gm" }, "PUT", textBody);
+  assert.equal(t.status, 409); assert.equal(JSON.stringify(row("legT")), legBefore, "legacy row untouched");
+  // Wrong key still 403 before the type check
+  t = await call(one, { id: tid, owner: "intruder" }, "PUT", textBody);
+  assert.equal(t.status, 403);
+}
+
+console.log("Vercel API checks passed (incl. Phase 5 write path, Phase 7 share page, Phase 8 text threads)");

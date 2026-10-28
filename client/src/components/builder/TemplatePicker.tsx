@@ -1,6 +1,47 @@
 import { Link } from "wouter";
-import { Newspaper } from "lucide-react";
+import { MessageSquare, Newspaper } from "lucide-react";
 import { TEMPLATES } from "@/lib/templates";
+import { TEXT_TEMPLATES, PLATFORM_LABELS, type TextTemplateDef } from "@/lib/textTemplates";
+
+/** Phase 8: tiny phone mock for a text-thread template card. */
+function TextThumb({ tpl }: { tpl: TextTemplateDef }) {
+  const cyber = tpl.platform === "cyber";
+  const bg = cyber ? "#07070d" : "#fff";
+  const self = cyber ? "#002a33" : tpl.platform === "ios" ? "#0a84ff" : "#d3e3fd";
+  const other = cyber ? "#140a1c" : tpl.platform === "ios" ? "#e9e9eb" : "#f1f3f4";
+  const bubble = (side: "l" | "r", w: string, key: number) => (
+    <div key={key} style={{ alignSelf: side === "r" ? "flex-end" : "flex-start", width: w, height: 9,
+      background: side === "r" ? self : other,
+      border: cyber ? `1px solid ${side === "r" ? "#00e5ff" : "#ff2bd6"}` : "none",
+      borderRadius: cyber ? 2 : 6 }} />
+  );
+  return (
+    <div className="absolute inset-0 flex justify-center items-end" style={{ background: cyber ? "#000" : "#dfe3ea" }}>
+      <div style={{ width: 92, height: 118, background: bg, borderRadius: "10px 10px 0 0", padding: "8px 7px", display: "flex", flexDirection: "column", gap: 4,
+        border: cyber ? "1px solid #00e5ff66" : "1px solid #c8ccd4", borderBottom: "none" }}>
+        <div style={{ fontSize: 6, fontFamily: cyber ? "'Share Tech Mono',monospace" : "sans-serif", color: cyber ? "#00e5ff" : "#111", letterSpacing: cyber ? 1 : 0, marginBottom: 2 }}>
+          {cyber ? "FIXER // ENCRYPTED" : tpl.platform === "ios" ? "Crew" : "Back Alley Boys"}
+        </div>
+        {[["l", "70%"], ["l", "55%"], ["r", "60%"], ["l", "75%"], ["r", "45%"]].map(([s, w], i) => bubble(s as "l" | "r", w, i))}
+      </div>
+    </div>
+  );
+}
+
+function TextTemplateCard({ tpl }: { tpl: TextTemplateDef }) {
+  return (
+    <Link href={`/build/text/${tpl.id}`} data-testid={`card-template-${tpl.id}`}>
+      <a className="group block border border-card-border bg-card hover-elevate overflow-hidden hud-panel">
+        <div className="h-32 border-b border-card-border relative overflow-hidden"><TextThumb tpl={tpl} /></div>
+        <div className="p-3">
+          <div className="font-semibold text-sm uppercase tracking-wide" style={{ fontFamily: "'Rajdhani',sans-serif" }}>{tpl.name}</div>
+          <p className="text-xs text-muted-foreground mt-1 leading-snug">{tpl.description}</p>
+          <p className="text-[10px] uppercase tracking-widest text-primary/80 mt-1.5">{PLATFORM_LABELS[tpl.platform]}</p>
+        </div>
+      </a>
+    </Link>
+  );
+}
 
 const NCT_NAV = ["GOSSIP", "OPINION", "WEATHER", "TECH", "LIFESTYLE", "LOCAL", "BIZ", "WORLD"];
 
@@ -105,6 +146,12 @@ export default function TemplatePicker() {
           {otherTemplates.map((t) => (
             <TemplateCard key={t.id} id={t.id} name={t.name} description={t.description} />
           ))}
+        </div>
+        <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mt-8 mb-4 flex items-center gap-2" data-testid="heading-text-threads">
+          <MessageSquare className="w-4 h-4" /> Text threads
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {TEXT_TEMPLATES.map((t) => <TextTemplateCard key={t.id} tpl={t} />)}
         </div>
       </section>
   );

@@ -135,11 +135,11 @@ export function DraftRestoreBanner({
 }
 
 /** Banner shown while editing an existing saved sheet (Save overwrites it). */
-export function EditingBanner({ editingId }: { editingId: string | null }) {
+export function EditingBanner({ editingId, noun = "sheet" }: { editingId: string | null; noun?: string }) {
   if (!editingId) return null;
   return (
             <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-primary border border-primary/40 bg-primary/5 px-3 py-2 hud-panel" data-testid="banner-editing">
-              <Save className="w-3.5 h-3.5" /> Editing saved sheet — changes update the same share link
+              <Save className="w-3.5 h-3.5" /> Editing saved {noun} — changes update the same share link
             </div>
   );
 }

@@ -9,12 +9,16 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Builder from "@/pages/Builder";
 import ViewSheet from "@/pages/ViewSheet";
+import TextBuilder from "@/pages/TextBuilder";
 
 function AppRouter() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/build" component={Builder} />
+      {/* Phase 8: text threads. Must come before /build/:template. */}
+      <Route path="/build/text" component={TextBuilder} />
+      <Route path="/build/text/:template" component={TextBuilder} />
       <Route path="/build/:template" component={Builder} />
       <Route path="/s/:id" component={ViewSheet} />
       <Route component={NotFound} />

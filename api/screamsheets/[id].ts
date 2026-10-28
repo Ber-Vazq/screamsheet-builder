@@ -1,7 +1,15 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { supabase, TABLE } from "../_supabase.js";
 import { decodeRow, decodeWritten } from "../_artifacts.js";
-import { parseWriteMetadata, metadataColumns, WriteMetadataError, type WriteMetadata } from "../../shared/writeMetadata.js";
+import {
+  parseWriteMetadata,
+  metadataColumns,
+  WriteMetadataError,
+  writeType,
+  typeChangeError,
+  type WriteMetadata,
+} from "../../shared/writeMetadata.js";
+import { validateThreadPayload } from "../../shared/threadCodec.js";
 
 function getOwner(req: VercelRequest): string {
   const raw = Array.isArray(req.query.owner) ? req.query.owner[0] : req.query.owner;
@@ -45,17 +53,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (err instanceof WriteMetadataError) return res.status(400).json({ error: err.message });
       throw err;
     }
+    // Phase 8: type-specific shape checks for text/email threads.
+    const problem = validateThreadPayload(writeType(meta), body);
+    if (problem) return res.status(400).json({ error: problem });
 
     // Confirm ownership before writing.
     const { data: existing, error: lookupErr } = await supabase
       .from(TABLE)
-      .select("id, owner_key")
+      .select("id, owner_key, artifact_type")
       .eq("id", id)
       .maybeSingle();
     if (lookupErr) return res.status(500).json({ error: lookupErr.message });
     if (!existing) return res.status(404).json({ error: "Not found" });
     if (existing.owner_key !== owner)
       return res.status(403).json({ error: "This screamsheet belongs to a different GM key." });
+    // Phase 8: a row never changes type (sheet <-> text thread).
+    const conflict = typeChangeError(existing.artifact_type, meta);
+    if (conflict) return res.status(409).json({ error: conflict });
 
     const { data, error } = await supabase
       .from(TABLE)
