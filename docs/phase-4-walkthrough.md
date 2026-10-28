@@ -62,6 +62,8 @@ Drizzle's `{ mode: "json" }` columns run `JSON.parse` *during the select*. One c
 
 ## Production database steps
 
+> **Applied to production on Oct 28, 2026 (12:35 PM CT).** Backup: 398/398 rows, all identical to live, anon role has no access. Columns added as nullable; 0 rows have non-NULL metadata. The live site was checked afterwards and still served share links normally.
+
 Run in this order (Supabase SQL editor, or the migration tool):
 
 1. `supabase/migrations/20261028000000_phase4_backup.sql`
