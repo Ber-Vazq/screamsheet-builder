@@ -1,5 +1,6 @@
 import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
+import { fitToLetter } from "@shared/pdfLayout";
 
 function slug(s: string) {
   return s.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "screamsheet";
@@ -33,19 +34,10 @@ export async function exportPdf(node: HTMLElement, title: string) {
     img.onerror = reject;
     img.src = dataUrl;
   });
-  // US Letter portrait, fit the image to the page width.
+  // US Letter portrait. Placement comes from shared/pdfLayout so the print
+  // preview shows exactly this layout.
   const pdf = new jsPDF({ unit: "pt", format: "letter", orientation: "portrait" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const ratio = img.height / img.width;
-  let w = pageW;
-  let h = pageW * ratio;
-  // If taller than one page, scale down to fit a single page.
-  if (h > pageH) {
-    h = pageH;
-    w = pageH / ratio;
-  }
-  const x = (pageW - w) / 2;
-  pdf.addImage(dataUrl, "PNG", x, 0, w, h);
+  const { x, y, w, h } = fitToLetter(img.width, img.height);
+  pdf.addImage(dataUrl, "PNG", x, y, w, h);
   pdf.save(`${slug(title)}.pdf`);
 }

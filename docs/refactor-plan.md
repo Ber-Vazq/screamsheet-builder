@@ -16,8 +16,8 @@ Never rewrite existing GM rows in place. Old rows load as-is and are normalized 
 | — | Security hotfix: service-role key + anon lockdown | High | **Done** — PR #11 (see `docs/security-hotfix.md`) |
 | 5 | Conservative write rollout (Release A → B) | High | **Release A done** — PR #12 (see `docs/phase-5-walkthrough.md`); flip `VITE_UPGRADE_ON_SAVE=true` for B after monitoring |
 | 6 | Reliability / UX: save status, autosave, drafts, mobile tabs | Medium | **Done** — PR #13 (see `docs/phase-6-walkthrough.md`) |
-| 7 | Public view hardening + editor polish (drag-and-drop, print preview) | Medium | Next |
-| 8 | Text thread MVP | Medium | Pending |
+| 7 | Public view hardening + editor polish (drag-and-drop, print preview) | Medium | **Done** — PR #15 (see `docs/phase-7-walkthrough.md`) |
+| 8 | Text thread MVP | Medium | Next |
 | 9 | Email thread MVP | Medium | Pending |
 | 10 | Gallery, SEO, attribution, Etsy monetization | Medium | Pending |
 

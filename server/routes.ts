@@ -10,6 +10,7 @@ import {
   type StoredRecord,
 } from "@shared/artifactCodec";
 import { parseWriteMetadata, WriteMetadataError, type WriteMetadata } from "@shared/writeMetadata";
+import { describeArtifact, isValidShareId, renderSharePage } from "@shared/shareMeta";
 
 /** Phase 5: same metadata rules as the Vercel API. Returns undefined after sending a 400. */
 function readMeta(body: unknown, res: any): WriteMetadata | undefined {
@@ -49,6 +50,24 @@ export async function registerRoutes(
     if (meta === undefined) return;
     const sheet = await storage.createScreamsheet(parsed.data, meta);
     res.json(decodeWritten(sheet as StoredRecord, "POST /api/screamsheets"));
+  });
+
+  // Phase 7: share link with link-preview tags -> redirects to /#/s/:id.
+  // Mirrors api/share/[id].ts (Vercel rewrites /s/:id there).
+  app.get("/s/:id", async (req, res) => {
+    const id = req.params.id;
+    const origin = `${req.protocol}://${req.get("host")}`;
+    res.type("html");
+    if (!isValidShareId(id)) return res.status(404).send(renderSharePage({ origin, id, found: false }));
+    const row = await storage.getScreamsheet(id);
+    if (!row) return res.status(404).send(renderSharePage({ origin, id, found: false }));
+    try {
+      const { title, description } = describeArtifact(deserializeStoredRecord(row));
+      res.send(renderSharePage({ origin, id, found: true, title, description }));
+    } catch (err) {
+      logDecodeFailure("GET /s/:id", row, err);
+      res.send(renderSharePage({ origin, id, found: true }));
+    }
   });
 
   // Read a shared screamsheet by id (public; owner key is stripped from response)

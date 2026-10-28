@@ -44,6 +44,9 @@ export type SheetSettings = {
   showNav: boolean; // tabloid templates hide the nav grid
   ticker: string; // optional scrolling breaking-news line
   columns: 1 | 2 | 3; // multi column layout
+  // Phase 7: small "Made with Screamsheet Builder" line at the bottom of the
+  // sheet (and its exports). Only true shows it, so legacy sheets are unchanged.
+  showAttribution?: boolean;
 };
 
 export type TwoColumnSlot =

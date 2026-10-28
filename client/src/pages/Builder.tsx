@@ -11,6 +11,8 @@ import BlockListEditor from "@/components/builder/BlockListEditor";
 import PreviewPane from "@/components/builder/PreviewPane";
 import { EditingBanner, ShareLinkPanel, SaveStatusBar, DraftRestoreBanner } from "@/components/builder/SaveStatus";
 import { Pencil, Eye } from "lucide-react";
+import { ConfirmFlash, useConfirmFlash } from "@/components/ConfirmFlash";
+import { ParodyDisclaimer } from "@/components/Disclaimer";
 
 type MobileTab = "edit" | "preview";
 
@@ -30,8 +32,12 @@ export default function Builder() {
 
   const state = useSheetState(tpl);
   const { sheet } = state;
-  const persistence = useSheetPersistence({ tpl, editId, loadId, state });
-  const exporter = useSheetExport(sheet.title);
+  const { flash, show } = useConfirmFlash();
+  const persistence = useSheetPersistence({
+    tpl, editId, loadId, state,
+    onSaved: (mode) => show(mode === "create" ? "Link ready" : "Changes saved", mode === "create" ? "Share it with your players" : "Same link, new content"),
+  });
+  const exporter = useSheetExport(sheet.title, (kind) => show(kind === "png" ? "PNG exported" : "PDF exported", "Check your downloads"));
   const [tab, setTab] = useState<MobileTab>("edit");
 
   const tabBtn = (t: MobileTab, label: string, Icon: typeof Pencil) => (
@@ -61,6 +67,7 @@ export default function Builder() {
         />
       }
     >
+      <ConfirmFlash flash={flash} />
       <div className="space-y-3 mb-4">
         <SaveStatusBar
           status={persistence.status}
@@ -101,6 +108,7 @@ export default function Builder() {
             onAdd={state.addBlock}
             onRemove={state.removeBlock}
             onMove={state.moveBlock}
+            onReorder={state.reorderBlock}
             onImage={state.setBlockImage}
           />
           <ShareLinkPanel shareUrl={persistence.shareUrl} onCopy={persistence.copyLink} />
@@ -110,6 +118,7 @@ export default function Builder() {
           className={tab === "preview" ? "" : "max-lg:fixed max-lg:top-0 max-lg:-left-[10000px] max-lg:w-[390px] max-lg:pointer-events-none"}
         >
           <PreviewPane sheet={sheet} sheetRef={exporter.sheetRef} />
+          <ParodyDisclaimer compact className="mt-3" />
         </div>
       </div>
     </AppShell>
