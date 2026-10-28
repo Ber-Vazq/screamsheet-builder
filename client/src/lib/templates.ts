@@ -1,4 +1,5 @@
 import type { Branding, SheetSettings, Block } from "@shared/schema";
+import type { SheetArtifact } from "@shared/artifact";
 import { nanoid } from "nanoid";
 
 export type TemplateDef = {
@@ -138,4 +139,32 @@ export function newBlock(type: Block["type"]): Block {
       id, type: "two-column", left: { kind: "text", content: "Left column text." }, right: { kind: "text", content: "Right column text."}
     }
   }
+}
+
+// ---------- Phase 3: template -> runtime artifact ----------
+
+/** Title a fresh sheet starts with for a given template. */
+export function defaultTitleFor(tpl: TemplateDef): string {
+  return tpl.name === "Custom Outlet" ? "Untitled Screamsheet" : tpl.name;
+}
+
+/**
+ * Builds an unsaved SheetArtifact from a template. id/shareSlug are "" until
+ * the first save returns a real id from the API.
+ */
+export function sheetArtifactFromTemplate(tpl: TemplateDef): SheetArtifact {
+  return {
+    id: "",
+    type: "sheet",
+    title: defaultTitleFor(tpl),
+    createdAt: null,
+    updatedAt: null,
+    shareSlug: "",
+    gmKeyScoped: false,
+    version: 0,
+    template: tpl.id,
+    branding: tpl.branding,
+    settings: tpl.settings,
+    blocks: starterBlocks(),
+  };
 }
